@@ -12,6 +12,10 @@ import { Inventario } from "./components/Inventario";
 import { Proveedores } from "./components/Proveedores";
 import { Reportes } from "./components/Reportes";
 import { Servicios } from "./components/Servicios";
+import { BusquedaGlobal } from "./components/BusquedaGlobal";
+import { Perfil } from "./components/Perfil";
+import { Notificaciones } from "./components/Notificaciones";
+import { Configuracion } from "./components/Configuracion";
 
 
 function App() {
@@ -29,6 +33,10 @@ function App() {
           <Route path="/proveedores" element={<Proveedores />} />
           <Route path="/reportes" element={<Reportes />} />
           <Route path="/servicios" element={<Servicios />} />
+          <Route path="/busqueda" element={<BusquedaGlobal />} />
+          <Route path="/perfil" element={<Perfil />} />
+          <Route path="/notificaciones" element={<Notificaciones />} />
+          <Route path="/configuracion" element={<Configuracion />} />
         </Routes>
       </Layout>
     </BrowserRouter>

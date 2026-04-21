@@ -21,28 +21,28 @@ import {
 
 // --- COMPONENTES DEL NAVBAR ---
 
-const NavbarSearch = () => (
-  <button className="p-2 text-gray-400 hover:text-cyan-400 transition-colors rounded-full hover:bg-gray-800">
+const NavbarSearch = ({ onClick }) => (
+  <button onClick={onClick} className="p-2 text-gray-400 hover:text-cyan-400 transition-colors rounded-full hover:bg-gray-800">
     <Search size={20} />
   </button>
 );
 
-const NavbarNotifications = () => (
-  <button className="relative p-2 text-gray-400 hover:text-cyan-400 transition-colors rounded-full hover:bg-gray-800">
+const NavbarNotifications = ({ onClick }) => (
+  <button onClick={onClick} className="relative p-2 text-gray-400 hover:text-cyan-400 transition-colors rounded-full hover:bg-gray-800">
     <Bell size={20} />
     {/* Punto rojo de notificación */}
     <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 border-2 border-gray-900 rounded-full"></span>
   </button>
 );
 
-const NavbarProfile = () => (
-  <button className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-md hover:opacity-80 transition-opacity mx-1">
+const NavbarProfile = ({ onClick }) => (
+  <button onClick={onClick} className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-md hover:opacity-80 transition-opacity mx-1">
     MG
   </button>
 );
 
-const NavbarSettings = () => (
-  <button className="p-2 text-gray-400 hover:text-cyan-400 transition-colors rounded-full hover:bg-gray-800">
+const NavbarSettings = ({ onClick }) => (
+  <button onClick={onClick} className="p-2 text-gray-400 hover:text-cyan-400 transition-colors rounded-full hover:bg-gray-800">
     <Settings size={20} />
   </button>
 );
@@ -167,10 +167,10 @@ export function Layout({ children }) {
 
           {/* Lado derecho del Header - Componentes Nuevos */}
           <div className="flex items-center gap-1 sm:gap-2">
-            <NavbarSearch />
-            <NavbarNotifications />
-            <NavbarProfile />
-            <NavbarSettings />
+            <NavbarSearch onClick={() => navigate("/busqueda")} />
+            <NavbarNotifications onClick={() => navigate("/notificaciones")} />
+            <NavbarProfile onClick={() => navigate("/perfil")} />
+            <NavbarSettings onClick={() => navigate("/configuracion")} />
           </div>
         </header>
 
