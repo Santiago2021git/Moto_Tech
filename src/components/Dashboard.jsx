@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import {
   AlertCircle,
   Wrench,
@@ -8,43 +9,17 @@ import {
   User,
   Clock,
   TrendingUp,
-  MoreVertical
+  ArrowRight
 } from "lucide-react";
 
 export const Dashboard = () => {
+  const navigate = useNavigate();
+
   const stats = [
-    {
-      label: "Sin Atender",
-      value: "1",
-      sub: "Vehículos en espera",
-      icon: AlertCircle,
-      color: "text-orange-400",
-      bg: "bg-orange-500/10",
-    },
-    {
-      label: "En Proceso",
-      value: "1",
-      sub: "Trabajos en curso",
-      icon: Wrench,
-      color: "text-blue-400",
-      bg: "bg-blue-500/10",
-    },
-    {
-      label: "Finalizados",
-      value: "1",
-      sub: "Esta semana",
-      icon: CheckCircle2,
-      color: "text-green-400",
-      bg: "bg-green-500/10",
-    },
-    {
-      label: "Citas Hoy",
-      value: "0",
-      sub: "Programadas",
-      icon: Calendar,
-      color: "text-purple-400",
-      bg: "bg-purple-500/10",
-    },
+    { label: "Sin Atender", value: "1", sub: "Vehículos en espera", icon: AlertCircle, color: "text-orange-400", bg: "bg-orange-500/10", route: "/vehiculos" },
+    { label: "En Proceso", value: "1", sub: "Trabajos en curso", icon: Wrench, color: "text-blue-400", bg: "bg-blue-500/10", route: "/vehiculos" },
+    { label: "Finalizados", value: "1", sub: "Esta semana", icon: CheckCircle2, color: "text-green-400", bg: "bg-green-500/10", route: "/vehiculos" },
+    { label: "Citas Hoy", value: "0", sub: "Programadas", icon: Calendar, color: "text-purple-400", bg: "bg-purple-500/10", route: "/agenda" },
   ];
 
   return (
@@ -65,7 +40,8 @@ export const Dashboard = () => {
         {stats.map((stat, i) => (
           <div
             key={i}
-            className="bg-zinc-950 border border-zinc-800 rounded-[2rem] p-8 hover:border-zinc-700 transition-all group relative overflow-hidden"
+            onClick={() => navigate(stat.route)}
+            className="bg-zinc-950 border border-zinc-800 rounded-[2rem] p-8 hover:border-zinc-700 transition-all group relative overflow-hidden cursor-pointer active:scale-[0.98]"
           >
             <div className="flex justify-between items-start">
               <div>
@@ -83,6 +59,9 @@ export const Dashboard = () => {
             <p className="text-sm text-zinc-500 font-medium">
               {stat.sub}
             </p>
+            <div className="absolute bottom-4 right-5 opacity-0 group-hover:opacity-100 transition-opacity">
+              <ArrowRight size={16} className="text-zinc-600" />
+            </div>
           </div>
         ))}
       </div>
@@ -101,13 +80,11 @@ export const Dashboard = () => {
 
           <div className="bg-zinc-950 border border-zinc-800 rounded-[2.5rem] p-8 group hover:border-orange-500/30 transition-all">
              <div className="bg-orange-500/5 border border-orange-500/10 rounded-3xl p-6 relative">
-                {/* Badge de tiempo */}
                 <div className="absolute top-6 right-6 flex items-center gap-1.5 bg-orange-500/20 text-orange-400 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter">
                    <Clock size={12} />
                    hace 8 días
                 </div>
-
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-6 mb-6">
                   <div className="bg-orange-500 text-black p-4 rounded-2xl shadow-lg shadow-orange-500/20">
                     <Bike size={32} strokeWidth={2.5} />
                   </div>
@@ -116,6 +93,20 @@ export const Dashboard = () => {
                     <p className="text-zinc-400 text-sm font-medium">Placa: <span className="text-zinc-100 font-mono">XYZ789</span></p>
                     <p className="text-zinc-400 text-sm font-medium">Propietario: <span className="text-zinc-100">Laura Gómez</span></p>
                   </div>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => navigate('/vehiculos')}
+                    className="flex-1 flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-800 py-2.5 rounded-xl text-sm font-bold transition-colors"
+                  >
+                    <Bike size={15} /> Ver Vehículo
+                  </button>
+                  <button
+                    onClick={() => navigate('/vehiculos')}
+                    className="flex-1 flex items-center justify-center gap-2 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/20 py-2.5 rounded-xl text-sm font-bold transition-colors"
+                  >
+                    <Wrench size={15} /> Iniciar Servicio
+                  </button>
                 </div>
              </div>
           </div>
@@ -137,7 +128,8 @@ export const Dashboard = () => {
             ].map((cita, i) => (
               <div
                 key={i}
-                className="bg-zinc-950 border border-zinc-800 rounded-[2rem] p-6 flex items-center justify-between hover:bg-zinc-900 transition-all border-l-4 border-l-purple-600"
+                onClick={() => navigate('/agenda')}
+                className="bg-zinc-950 border border-zinc-800 rounded-[2rem] p-6 flex items-center justify-between hover:bg-zinc-900 transition-all border-l-4 border-l-purple-600 cursor-pointer active:scale-[0.98]"
               >
                 <div className="flex items-center gap-5">
                   <div className="w-12 h-12 rounded-full bg-purple-600/10 flex items-center justify-center text-purple-400 border border-purple-500/20">
