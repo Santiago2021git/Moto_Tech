@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import {
   FileText, ExternalLink, Plus, Search, Check,
   AlertCircle, Trash2, Calendar, User, DollarSign, Info, X
@@ -39,7 +39,7 @@ export const Facturas = () => {
 
   const validate = () => {
     const e = {};
-    if (!form.numero.trim()) e.numero = "El nÃºmero es obligatorio.";
+    if (!form.numero.trim()) e.numero = "El número es obligatorio.";
     if (!form.cliente.trim()) e.cliente = "El cliente es obligatorio.";
     if (!form.fecha.trim()) e.fecha = "La fecha es obligatoria.";
     if (!form.monto.trim()) e.monto = "El monto es obligatorio.";
@@ -110,7 +110,7 @@ export const Facturas = () => {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">NÂ° Factura *</label>
+                  <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">N° Factura *</label>
                   <input value={form.numero} onChange={handleChange("numero")} placeholder="Ej: FAC-004"
                     className={`w-full bg-zinc-900 border ${errors.numero ? "border-red-500/70" : "border-zinc-800"} focus:border-purple-500/60 rounded-xl py-2.5 px-4 text-white placeholder:text-zinc-600 outline-none transition-all`} />
                   {errors.numero && <p className="text-red-400 text-xs mt-1 flex items-center gap-1"><AlertCircle size={12}/>{errors.numero}</p>}
@@ -168,7 +168,7 @@ export const Facturas = () => {
           <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-8 w-full max-w-sm shadow-2xl text-center">
             <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center mx-auto mb-5"><Trash2 size={32} className="text-red-400" /></div>
             <h3 className="text-xl font-black text-white mb-2">Eliminar Referencia</h3>
-            <p className="text-zinc-400 text-sm mb-7">Esta acciÃ³n no se puede deshacer.</p>
+            <p className="text-zinc-400 text-sm mb-7">Esta acción no se puede deshacer.</p>
             <div className="flex gap-3">
               <button onClick={() => setConfirmDeleteIndex(null)} className="flex-1 py-2.5 bg-zinc-900 border border-zinc-800 text-zinc-300 rounded-xl font-bold text-sm">Cancelar</button>
               <button onClick={() => handleDelete(confirmDeleteIndex)} className="flex-1 py-2.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 rounded-xl font-bold text-sm transition-all">Eliminar</button>
@@ -180,8 +180,8 @@ export const Facturas = () => {
       {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-4xl font-black text-white tracking-tight">FacturaciÃ³n</h2>
-          <p className="text-zinc-500 mt-1 font-medium">GestiÃ³n externa de facturas y registro de referencias</p>
+          <h2 className="text-4xl font-black text-white tracking-tight">Facturación</h2>
+          <p className="text-zinc-500 mt-1 font-medium">Gestión externa de facturas y registro de referencias</p>
         </div>
         <button onClick={openModal} className="flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white px-6 py-3 rounded-2xl font-bold transition-all shadow-lg shadow-purple-600/20 active:scale-95">
           <Plus size={20} strokeWidth={3} />
@@ -189,14 +189,14 @@ export const Facturas = () => {
         </button>
       </div>
 
-      {/* PANEL INFORMATIVO â€” SISTEMA EXTERNO */}
+      {/* PANEL INFORMATIVO — SISTEMA EXTERNO */}
       <div className="bg-zinc-950 border border-cyan-500/20 rounded-[2rem] p-7">
         <div className="flex items-start gap-4">
           <div className="bg-cyan-500/10 p-3 rounded-2xl flex-shrink-0">
             <Info size={24} className="text-cyan-400" />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="text-lg font-black text-white mb-1">FacturaciÃ³n gestionada externamente</h3>
+            <h3 className="text-lg font-black text-white mb-1">Facturación gestionada externamente</h3>
             <p className="text-zinc-400 text-sm leading-relaxed mb-4">
               {sf.instrucciones}
             </p>
@@ -241,11 +241,11 @@ export const Facturas = () => {
       <div>
         <h3 className="text-lg font-black text-white mb-4">Registro de Referencias</h3>
 
-        {/* BÃšSQUEDA Y FILTRO */}
+        {/* BÚSQUEDA Y FILTRO */}
         <div className="flex flex-col md:flex-row gap-4 mb-6">
           <div className="flex-1 relative group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-purple-500 transition-colors" size={20} />
-            <input type="text" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Buscar por nÃºmero, cliente o servicio..."
+            <input type="text" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Buscar por número, cliente o servicio..."
               className="w-full bg-zinc-950 border border-zinc-800 focus:border-purple-500/50 rounded-2xl py-3 pl-12 pr-4 text-white placeholder:text-zinc-600 outline-none transition-all" />
           </div>
           <select value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)}
@@ -264,7 +264,7 @@ export const Facturas = () => {
         ) : (
           <div className="bg-zinc-950 border border-zinc-800 rounded-[2rem] overflow-hidden">
             <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider border-b border-zinc-800">
-              <div className="col-span-2">NÂ° Factura</div>
+              <div className="col-span-2">N° Factura</div>
               <div className="col-span-3">Cliente</div>
               <div className="col-span-3">Servicio</div>
               <div className="col-span-1">Fecha</div>
@@ -285,7 +285,7 @@ export const Facturas = () => {
                   <div className="md:col-span-3 flex items-center gap-2 text-zinc-300 text-sm">
                     <User size={14} className="text-zinc-500 flex-shrink-0" />{ref.cliente}
                   </div>
-                  <div className="md:col-span-3 text-zinc-400 text-sm truncate">{ref.servicio || "—"}</div>
+                  <div className="md:col-span-3 text-zinc-400 text-sm truncate">{ref.servicio || "�"}</div>
                   <div className="md:col-span-1 flex items-center gap-1 text-zinc-500 text-xs whitespace-nowrap">
                     <Calendar size={12}/>{ref.fecha}
                   </div>

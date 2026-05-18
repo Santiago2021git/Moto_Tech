@@ -17,7 +17,7 @@ const COLORES = [
   "from-cyan-500 to-blue-600",
 ];
 
-const CATEGORIAS = ["Lubricantes", "Filtros", "Transmisión", "Eléctrico", "Frenos", "Llantas", "Carrocería", "Otros"];
+const CATEGORIAS = ["Lubricantes", "Filtros", "Transmisi�n", "El�ctrico", "Frenos", "Llantas", "Carrocer�a", "Otros"];
 
 const initialForm = { nombre: "", marca: "", codigo: "", categoria: "Lubricantes", stock: "", minStock: "", precio: "", ubicacion: "" };
 
@@ -26,12 +26,12 @@ export const Inventario = () => {
   const [items, setItems] = useState([
     { nombre: "Aceite Motul 10W40", marca: "Motul Colombia", codigo: "ACE-001", categoria: "Lubricantes", stock: 24, minStock: 10, precio: "$15.000", ubicacion: "Estante A-1", color: "from-blue-600 to-indigo-600" },
     { nombre: "Filtro de Aceite K&N", marca: "K&N Distribuciones", codigo: "FIL-002", categoria: "Filtros", stock: 5, minStock: 8, precio: "$25.000", ubicacion: "Estante B-2", color: "from-purple-600 to-pink-600" },
-    { nombre: "Cadena DID 520", marca: "DID Racing", codigo: "CAD-003", categoria: "Transmisión", stock: 2, minStock: 5, precio: "$120.000", ubicacion: "Estante C-3", color: "from-emerald-500 to-teal-600" },
-    { nombre: "Bujía NGK Iridium", marca: "NGK", codigo: "BUJ-004", categoria: "Eléctrico", stock: 45, minStock: 15, precio: "$35.000", ubicacion: "Estante D-1", color: "from-orange-500 to-red-600" },
+    { nombre: "Cadena DID 520", marca: "DID Racing", codigo: "CAD-003", categoria: "Transmisi�n", stock: 2, minStock: 5, precio: "$120.000", ubicacion: "Estante C-3", color: "from-emerald-500 to-teal-600" },
+    { nombre: "Buj�a NGK Iridium", marca: "NGK", codigo: "BUJ-004", categoria: "El�ctrico", stock: 45, minStock: 15, precio: "$35.000", ubicacion: "Estante D-1", color: "from-orange-500 to-red-600" },
   ]);
 
   const [busqueda, setBusqueda] = useState("");
-  const [filtroCategoria, setFiltroCategoria] = useState("Todas las categorías");
+  const [filtroCategoria, setFiltroCategoria] = useState("Todas las categor�as");
   const [currentPage, setCurrentPage] = useState(1);
   const [showModal, setShowModal] = useState(false);
   const [editIndex, setEditIndex] = useState(null);
@@ -47,7 +47,7 @@ export const Inventario = () => {
   const itemsFiltrados = items.filter(item => {
     const t = busqueda.toLowerCase();
     const coincide = item.nombre.toLowerCase().includes(t) || item.codigo.toLowerCase().includes(t) || item.marca.toLowerCase().includes(t);
-    const catOk = filtroCategoria === "Todas las categorías" || item.categoria === filtroCategoria;
+    const catOk = filtroCategoria === "Todas las categor�as" || item.categoria === filtroCategoria;
     return coincide && catOk;
   });
 
@@ -60,11 +60,11 @@ export const Inventario = () => {
     const e = {};
     if (!form.nombre.trim()) e.nombre = "El nombre es obligatorio.";
     if (!form.marca.trim()) e.marca = "La marca es obligatoria.";
-    if (!form.codigo.trim()) e.codigo = "El código es obligatorio."; 
-    if (!form.stock || isNaN(Number(form.stock)) || Number(form.stock) < 0) e.stock = "Ingresa un stock válido (≥0).";
-    if (!form.minStock || isNaN(Number(form.minStock)) || Number(form.minStock) < 0) e.minStock = "Ingresa un mínimo válido (≥0).";
+    if (!form.codigo.trim()) e.codigo = "El c�digo es obligatorio."; 
+    if (!form.stock || isNaN(Number(form.stock)) || Number(form.stock) < 0) e.stock = "Ingresa un stock v�lido (=0).";
+    if (!form.minStock || isNaN(Number(form.minStock)) || Number(form.minStock) < 0) e.minStock = "Ingresa un m�nimo v�lido (=0).";
     if (!form.precio.trim()) e.precio = "El precio es obligatorio.";
-    if (!form.ubicacion.trim()) e.ubicacion = "La ubicación es obligatoria."; 
+    if (!form.ubicacion.trim()) e.ubicacion = "La ubicaci�n es obligatoria."; 
     return e;
   };
 
@@ -103,7 +103,7 @@ export const Inventario = () => {
 
   const handleReabastecer = () => {
     const cant = Number(cantidadReabastecer);
-    if (!cantidadReabastecer || isNaN(cant) || cant <= 0) { setErrorReabastecer("Ingresa una cantidad válida mayor a 0."); return; }
+    if (!cantidadReabastecer || isNaN(cant) || cant <= 0) { setErrorReabastecer("Ingresa una cantidad v�lida mayor a 0."); return; }
     setItems(prev => prev.map((it, i) => i === reabastecerIndex ? { ...it, stock: it.stock + cant } : it));
     showToast(`Stock actualizado correctamente.`);
     setReabastecerIndex(null);
@@ -133,7 +133,7 @@ export const Inventario = () => {
               {[
                 { field: "nombre", label: "Nombre *", placeholder: "Ej: Aceite Motul 10W40", colSpan: "sm:col-span-2" },
                 { field: "marca", label: "Marca *", placeholder: "Ej: Motul Colombia" },
-                { field: "codigo", label: "Código *", placeholder: "Ej: ACE-001" },
+                { field: "codigo", label: "C�digo *", placeholder: "Ej: ACE-001" },
               ].map(({ field, label, placeholder, colSpan }) => (
                 <div key={field} className={colSpan || ""}>
                   <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">{label}</label>
@@ -144,7 +144,7 @@ export const Inventario = () => {
                 </div>
               ))}
               <div>
-                <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">Categoría *</label>
+                <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">Categor�a *</label>
                 <div className="relative">
                   <select value={form.categoria} onChange={handleChange("categoria")}
                     className="appearance-none w-full bg-zinc-900 border border-zinc-800 focus:border-purple-500/60 rounded-xl py-2.5 pl-4 pr-10 text-white outline-none transition-all cursor-pointer">
@@ -155,9 +155,9 @@ export const Inventario = () => {
               </div>
               {[
                 { field: "stock", label: "Stock Actual *", placeholder: "Ej: 24" },
-                { field: "minStock", label: "Stock Mínimo *", placeholder: "Ej: 10" },
+                { field: "minStock", label: "Stock M�nimo *", placeholder: "Ej: 10" },
                 { field: "precio", label: "Precio Unit. *", placeholder: "Ej: $15.000" },
-                { field: "ubicacion", label: "Ubicación *", placeholder: "Ej: Estante A-1" },
+                { field: "ubicacion", label: "Ubicaci�n *", placeholder: "Ej: Estante A-1" },
               ].map(({ field, label, placeholder }) => (
                 <div key={field}>
                   <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">{label}</label>
@@ -233,7 +233,7 @@ export const Inventario = () => {
           <p className="text-3xl font-black text-orange-500">{stockBajoItems.length}</p>
         </div>
         <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-5 flex flex-col justify-center shadow-sm">
-          <div className="flex items-center gap-2 text-zinc-500 mb-2"><Tag size={16} /><p className="text-sm font-medium">Categorías</p></div>
+          <div className="flex items-center gap-2 text-zinc-500 mb-2"><Tag size={16} /><p className="text-sm font-medium">Categor�as</p></div>
           <p className="text-3xl font-black text-white">{new Set(items.map(i => i.categoria)).size}</p>
         </div>
         <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-5 flex flex-col justify-center shadow-sm">
@@ -247,7 +247,7 @@ export const Inventario = () => {
         <div className="bg-orange-500/10 border border-orange-500/20 rounded-3xl p-6 flex gap-4 items-start shadow-lg shadow-orange-500/5">
           <AlertCircle className="text-orange-500 shrink-0 mt-1" size={24} />
           <div>
-            <h3 className="text-orange-500 font-bold text-lg mb-1">Atención: Stock Bajo ({stockBajoItems.length} items)</h3>
+            <h3 className="text-orange-500 font-bold text-lg mb-1">Atenci�n: Stock Bajo ({stockBajoItems.length} items)</h3>
             <p className="text-orange-400/80 font-medium text-sm md:text-base">
               Los siguientes repuestos necesitan reabastecimiento: <span className="text-orange-300 font-bold">{stockBajoItems.map(i => i.nombre).join(', ')}</span>
             </p>
@@ -255,7 +255,7 @@ export const Inventario = () => {
         </div>
       )}
 
-      {/* BARRA DE BÃšSQUEDA Y FILTROS */}
+      {/* BARRA DE BÚSQUEDA Y FILTROS */}
       <div className="flex flex-col md:flex-row gap-4">
         <div className="flex-1 relative group">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-purple-500 transition-colors" size={20} />
@@ -263,7 +263,7 @@ export const Inventario = () => {
             type="text"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            placeholder="Buscar por nombre, código o marca..."
+            placeholder="Buscar por nombre, c�digo o marca..."
             className="w-full bg-zinc-950 border border-zinc-800 focus:border-purple-500/50 rounded-2xl py-3 pl-12 pr-4 text-white placeholder:text-zinc-600 outline-none transition-all shadow-sm"
           />
         </div>
@@ -273,7 +273,7 @@ export const Inventario = () => {
             onChange={(e) => setFiltroCategoria(e.target.value)}
             className="appearance-none w-full md:w-auto bg-zinc-950 border border-zinc-800 hover:border-zinc-700 rounded-2xl py-3 pl-5 pr-12 text-white font-medium outline-none transition-all cursor-pointer shadow-sm"
           >
-            <option>Todas las categorías</option>
+            <option>Todas las categor�as</option>
             {CATEGORIAS.map(c => <option key={c}>{c}</option>)}
           </select>
           <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" size={18} />
@@ -285,11 +285,11 @@ export const Inventario = () => {
         <div className="flex flex-col items-center justify-center py-16 text-zinc-600">
           <Search size={40} className="mb-4 text-zinc-700" />
           <p className="font-bold text-lg">No se encontraron repuestos</p>
-          <p className="text-sm mt-1">Intenta con otro término de búsqueda o filtro.</p>
+          <p className="text-sm mt-1">Intenta con otro t�rmino de b�squeda o filtro.</p>
         </div>
       )}
 
-      {/* PAGINACIÓN */}
+      {/* PAGINACI�N */}
       {(() => {
         const totalPages = Math.ceil(itemsFiltrados.length / ITEMS_PER_PAGE);
         const paginated = itemsFiltrados.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
@@ -355,11 +355,11 @@ export const Inventario = () => {
               })}
             </div>
 
-            {/* CONTROLES DE PÁGINA */}
+            {/* CONTROLES DE P�GINA */}
             {totalPages > 1 && (
               <div className="flex items-center justify-between pt-2">
                 <p className="text-zinc-500 text-sm">
-                  Mostrando {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, itemsFiltrados.length)} de {itemsFiltrados.length} repuestos
+                  Mostrando {(currentPage - 1) * ITEMS_PER_PAGE + 1}�{Math.min(currentPage * ITEMS_PER_PAGE, itemsFiltrados.length)} de {itemsFiltrados.length} repuestos
                 </p>
                 <div className="flex items-center gap-2">
                   <button

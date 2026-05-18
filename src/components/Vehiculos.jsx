@@ -105,7 +105,7 @@ export const Vehiculos = () => {
   };
 
   if (vehiculoSeleccionado) {
-    return <DetalleVehiculo vehiculo={vehiculoSeleccionado} onBack={() => setVehiculoSeleccionado(null)} />;
+    return <DetalleVehiculo vehiculo={vehiculoSeleccionado} onBack={() => setVehiculoSeleccionado(null)} onUpdate={(updated) => { setVehiculos(prev => prev.map(v => v.id === updated.id ? updated : v)); setVehiculoSeleccionado(updated); }} />;
   }
 
   return (

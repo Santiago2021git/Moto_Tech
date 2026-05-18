@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import {
   Plus, CalendarDays, CheckCircle2, Clock,
   ChevronRight, Calendar as CalendarIcon, X, Check,
@@ -6,18 +6,18 @@ import {
 } from "lucide-react";
 import { usePageTitle } from "../hooks/usePageTitle";
 
-// â”€â”€ Tipos de cita â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-const TIPOS_CITA = ["RevisiÃ³n Inicial", "ReparaciÃ³n / Servicio"];
+// ── Tipos de cita ─────────────────────────────────────────────────────────
+const TIPOS_CITA = ["Revisión Inicial", "Reparación / Servicio"];
 const SERVICIOS_AGENDA = [
   "Cambio de Aceite", "Mantenimiento General", "Ajuste de Frenos",
-  "SincronizaciÃ³n de Motor", "RevisiÃ³n ElÃ©ctrica", "Cambio de Llantas",
-  "ReparaciÃ³n de Escape", "DiagnÃ³stico General"
+  "Sincronización de Motor", "Revisión Eléctrica", "Cambio de Llantas",
+  "Reparación de Escape", "Diagnóstico General"
 ];
 
-// â”€â”€ Genera los prÃ³ximos 5 dÃ­as hÃ¡biles desde hoy â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Genera los próximos 5 días hábiles desde hoy ──────────────────────────
 function generarDiasHabiles(cantidad = 5) {
   const dias = [];
-  const NOMBRES = ["domingo", "lunes", "martes", "miÃ©rcoles", "jueves", "viernes", "sÃ¡bado"];
+  const NOMBRES = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
   const MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
   let d = new Date();
   let count = 0;
@@ -38,17 +38,17 @@ function generarDiasHabiles(cantidad = 5) {
 }
 
 const initialFormA = {
-  cliente: "", vehiculo: "", tipo: "RevisiÃ³n Inicial",
+  cliente: "", vehiculo: "", tipo: "Revisión Inicial",
   servicio: "Cambio de Aceite", dia: "", hora: "", notas: "",
 };
 
-// Estado de una revisiÃ³n completada â†’ agenda 2da cita
+// Estado de una revisión completada → agenda 2da cita
 const initialFormPost = {
-  diagnostico: "", tiempoEstimado: "1 dÃ­a",
+  diagnostico: "", tiempoEstimado: "1 día",
   servicio: "Cambio de Aceite", dia: "", hora: "", notas: "",
 };
 
-const TIEMPOS_ESTIMADOS = ["1 hora", "2 horas", "Medio dÃ­a", "1 dÃ­a", "2 dÃ­as", "3 dÃ­as", "1 semana", "MÃ¡s de 1 semana"];
+const TIEMPOS_ESTIMADOS = ["1 hora", "2 horas", "Medio día", "1 día", "2 días", "3 días", "1 semana", "Más de 1 semana"];
 
 export const Agenda = () => {
   usePageTitle("Agenda");
@@ -61,7 +61,7 @@ export const Agenda = () => {
   const [toast, setToast] = useState(null);
   const [confirmDeleteIndex, setConfirmDeleteIndex] = useState(null);
 
-  // Modal post-revisiÃ³n: agendar 2da cita
+  // Modal post-revisión: agendar 2da cita
   const [showPostModal, setShowPostModal] = useState(false);
   const [postCitaRef, setPostCitaRef] = useState(null); // { dayId, citaIndex }
   const [formPost, setFormPost] = useState({ ...initialFormPost, dia: generarDiasHabiles(5)[0].id });
@@ -70,27 +70,27 @@ export const Agenda = () => {
   const citasDelDia = dias.find(d => d.id === selectedDay)?.citas || [];
   const totalCitas = dias.reduce((acc, d) => acc + d.citas.length, 0);
   const totalConfirmadas = dias.reduce((acc, d) => acc + d.citas.filter(c => c.confirmada).length, 0);
-  const totalRevisiones = dias.reduce((acc, d) => acc + d.citas.filter(c => c.tipo === "RevisiÃ³n Inicial").length, 0);
+  const totalRevisiones = dias.reduce((acc, d) => acc + d.citas.filter(c => c.tipo === "Revisión Inicial").length, 0);
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
-  // â”€â”€ Validaciones â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Validaciones ─────────────────────────────────────────────────────────
   const validate = () => {
     const e = {};
     if (!form.cliente.trim()) e.cliente = "El nombre del cliente es obligatorio.";
-    if (!form.vehiculo.trim()) e.vehiculo = "El vehÃ­culo es obligatorio.";
+    if (!form.vehiculo.trim()) e.vehiculo = "El vehículo es obligatorio.";
     if (!form.hora.trim()) e.hora = "La hora es obligatoria.";
     return e;
   };
 
   const validatePost = () => {
     const e = {};
-    if (!formPost.diagnostico.trim()) e.diagnostico = "El diagnÃ³stico es obligatorio.";
+    if (!formPost.diagnostico.trim()) e.diagnostico = "El diagnóstico es obligatorio.";
     if (!formPost.hora.trim()) e.hora = "La hora es obligatoria.";
     return e;
   };
 
-  // â”€â”€ Abrir/Cerrar modales â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Abrir/Cerrar modales ─────────────────────────────────────────────────
   const openModal = () => {
     setForm({ ...initialFormA, dia: selectedDay });
     setErrors({});
@@ -99,7 +99,7 @@ export const Agenda = () => {
 
   const closeModal = () => { setShowModal(false); setErrors({}); };
 
-  // â”€â”€ Crear cita â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Crear cita ────────────────────────────────────────────────────────────
   const handleSubmit = () => {
     const e = validate();
     if (Object.keys(e).length > 0) { setErrors(e); return; }
@@ -111,7 +111,7 @@ export const Agenda = () => {
       hora: form.hora,
       notas: form.notas,
       confirmada: false,
-      estado: "Pendiente", // Pendiente | En RevisiÃ³n | Diagnosticada | Segunda Cita Agendada | Completada
+      estado: "Pendiente", // Pendiente | En Revisión | Diagnosticada | Segunda Cita Agendada | Completada
     };
     setDias(prev => prev.map(d => d.id === form.dia ? { ...d, citas: [...d.citas, nuevaCita] } : d));
     if (form.dia !== selectedDay) setSelectedDay(form.dia);
@@ -119,14 +119,14 @@ export const Agenda = () => {
     closeModal();
   };
 
-  // â”€â”€ Eliminar cita â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Eliminar cita ─────────────────────────────────────────────────────────
   const handleDelete = (citaIndex) => {
     setDias(prev => prev.map(d => d.id === selectedDay ? { ...d, citas: d.citas.filter((_, i) => i !== citaIndex) } : d));
     setConfirmDeleteIndex(null);
     showToast("Cita eliminada.");
   };
 
-  // â”€â”€ Confirmar / marcar estado â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Confirmar / marcar estado ─────────────────────────────────────────────
   const toggleConfirmada = (citaIndex) => {
     setDias(prev => prev.map(d =>
       d.id === selectedDay
@@ -135,7 +135,7 @@ export const Agenda = () => {
     ));
   };
 
-  // â”€â”€ Avanzar estado de revisiÃ³n â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Avanzar estado de revisión ────────────────────────────────────────────
   const avanzarEstado = (citaIndex) => {
     setDias(prev => prev.map(d => {
       if (d.id !== selectedDay) return d;
@@ -144,8 +144,8 @@ export const Agenda = () => {
         citas: d.citas.map((c, i) => {
           if (i !== citaIndex) return c;
           const mapaEstado = {
-            "Pendiente": "En RevisiÃ³n",
-            "En RevisiÃ³n": "Diagnosticada",
+            "Pendiente": "En Revisión",
+            "En Revisión": "Diagnosticada",
             "Diagnosticada": "Diagnosticada",
             "Segunda Cita Agendada": "Completada",
             "Completada": "Completada",
@@ -156,7 +156,7 @@ export const Agenda = () => {
     }));
   };
 
-  // â”€â”€ Modal 2da cita (post-revisiÃ³n) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Modal 2da cita (post-revisión) ────────────────────────────────────────
   const openPostModal = (citaIndex) => {
     const cita = citasDelDia[citaIndex];
     setPostCitaRef({ dayId: selectedDay, citaIndex });
@@ -173,10 +173,10 @@ export const Agenda = () => {
     const nuevaCita = {
       cliente: formPost.cliente,
       vehiculo: formPost.vehiculo,
-      tipo: "ReparaciÃ³n / Servicio",
+      tipo: "Reparación / Servicio",
       servicio: formPost.servicio,
       hora: formPost.hora,
-      notas: `DiagnÃ³stico: ${formPost.diagnostico}. Tiempo estimado: ${formPost.tiempoEstimado}. ${formPost.notas}`.trim(),
+      notas: `Diagnóstico: ${formPost.diagnostico}. Tiempo estimado: ${formPost.tiempoEstimado}. ${formPost.notas}`.trim(),
       confirmada: false,
       estado: "Pendiente",
       esSeguimiento: true,
@@ -193,10 +193,10 @@ export const Agenda = () => {
         };
       }));
     }
-    // Agregar nueva cita al dÃ­a seleccionado
+    // Agregar nueva cita al día seleccionado
     setDias(prev => prev.map(d => d.id === formPost.dia ? { ...d, citas: [...d.citas, nuevaCita] } : d));
     if (formPost.dia !== selectedDay) setSelectedDay(formPost.dia);
-    showToast("Cita de reparaciÃ³n agendada correctamente.");
+    showToast("Cita de reparación agendada correctamente.");
     closePostModal();
   };
 
@@ -210,11 +210,11 @@ export const Agenda = () => {
     if (errorsPost[field]) setErrorsPost(prev => ({ ...prev, [field]: undefined }));
   };
 
-  // â”€â”€ Estilos por estado â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Estilos por estado ────────────────────────────────────────────────────
   const estadoStyle = (estado) => {
     const map = {
       "Pendiente":              "bg-zinc-800 text-zinc-400 border-zinc-700",
-      "En RevisiÃ³n":            "bg-blue-500/10 text-blue-400 border-blue-500/20",
+      "En Revisión":            "bg-blue-500/10 text-blue-400 border-blue-500/20",
       "Diagnosticada":          "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
       "Segunda Cita Agendada":  "bg-purple-500/10 text-purple-400 border-purple-500/20",
       "Completada":             "bg-green-500/10 text-green-400 border-green-500/20",
@@ -223,7 +223,7 @@ export const Agenda = () => {
   };
 
   const tipoStyle = (tipo) =>
-    tipo === "RevisiÃ³n Inicial"
+    tipo === "Revisión Inicial"
       ? "bg-blue-500/10 text-blue-400 border border-blue-500/20"
       : "bg-orange-500/10 text-orange-400 border border-orange-500/20";
 
@@ -237,7 +237,7 @@ export const Agenda = () => {
         </div>
       )}
 
-      {/* â”€â”€ MODAL NUEVA CITA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── MODAL NUEVA CITA ────────────────────────────────────────────── */}
       {showModal && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-8 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
@@ -254,9 +254,9 @@ export const Agenda = () => {
                     <button
                       key={t}
                       onClick={() => setForm(prev => ({ ...prev, tipo: t }))}
-                      className={`flex-1 py-2 rounded-xl text-sm font-bold border transition-all ${form.tipo === t ? (t === "RevisiÃ³n Inicial" ? "bg-blue-500/20 text-blue-400 border-blue-500/40" : "bg-orange-500/20 text-orange-400 border-orange-500/40") : "bg-zinc-900 text-zinc-500 border-zinc-800 hover:border-zinc-700"}`}
+                      className={`flex-1 py-2 rounded-xl text-sm font-bold border transition-all ${form.tipo === t ? (t === "Revisión Inicial" ? "bg-blue-500/20 text-blue-400 border-blue-500/40" : "bg-orange-500/20 text-orange-400 border-orange-500/40") : "bg-zinc-900 text-zinc-500 border-zinc-800 hover:border-zinc-700"}`}
                     >
-                      {t === "RevisiÃ³n Inicial" ? "ðŸ” RevisiÃ³n Inicial" : "ðŸ”§ ReparaciÃ³n"}
+                      {t === "Revisión Inicial" ? "🔍 Revisión Inicial" : "🔧 Reparación"}
                     </button>
                   ))}
                 </div>
@@ -268,9 +268,9 @@ export const Agenda = () => {
                   className={`w-full bg-zinc-900 border ${errors.cliente ? "border-red-500/70" : "border-zinc-800"} focus:border-purple-500/60 rounded-xl py-2.5 px-4 text-white placeholder:text-zinc-600 outline-none transition-all`} />
                 {errors.cliente && <p className="text-red-400 text-xs mt-1 flex items-center gap-1"><AlertCircle size={12}/>{errors.cliente}</p>}
               </div>
-              {/* VehÃ­culo */}
+              {/* Vehículo */}
               <div>
-                <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">VehÃ­culo *</label>
+                <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">Vehículo *</label>
                 <input value={form.vehiculo} onChange={handleChange("vehiculo")} placeholder="Ej: Honda CB 600 - Roja"
                   className={`w-full bg-zinc-900 border ${errors.vehiculo ? "border-red-500/70" : "border-zinc-800"} focus:border-purple-500/60 rounded-xl py-2.5 px-4 text-white placeholder:text-zinc-600 outline-none transition-all`} />
                 {errors.vehiculo && <p className="text-red-400 text-xs mt-1 flex items-center gap-1"><AlertCircle size={12}/>{errors.vehiculo}</p>}
@@ -286,10 +286,10 @@ export const Agenda = () => {
                   <ChevronRight size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none rotate-90" />
                 </div>
               </div>
-              {/* DÃ­a y Hora */}
+              {/* Día y Hora */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">DÃ­a</label>
+                  <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">Día</label>
                   <div className="relative">
                     <select value={form.dia} onChange={handleChange("dia")}
                       className="appearance-none w-full bg-zinc-900 border border-zinc-800 focus:border-purple-500/60 rounded-xl py-2.5 pl-4 pr-10 text-white outline-none cursor-pointer capitalize">
@@ -320,29 +320,29 @@ export const Agenda = () => {
         </div>
       )}
 
-      {/* â”€â”€ MODAL POST-REVISIÃ“N: AGENDAR 2DA CITA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── MODAL POST-REVISIÓN: AGENDAR 2DA CITA ───────────────────────── */}
       {showPostModal && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-8 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-xl font-black text-white">Agendar ReparaciÃ³n</h3>
+              <h3 className="text-xl font-black text-white">Agendar Reparación</h3>
               <button onClick={closePostModal} className="text-zinc-500 hover:text-white"><X size={22} /></button>
             </div>
             <p className="text-zinc-500 text-sm mb-6">
-              Completa el diagnÃ³stico y agenda la siguiente cita para <span className="text-white font-bold">{formPost.cliente}</span>.
+              Completa el diagnóstico y agenda la siguiente cita para <span className="text-white font-bold">{formPost.cliente}</span>.
             </p>
             <div className="space-y-4">
-              {/* DiagnÃ³stico */}
+              {/* Diagnóstico */}
               <div>
-                <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">DiagnÃ³stico *</label>
+                <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">Diagnóstico *</label>
                 <textarea value={formPost.diagnostico} onChange={handleChangePost("diagnostico")} rows={3}
-                  placeholder="Describe quÃ© se encontrÃ³ en la revisiÃ³n y quÃ© hay que hacer..."
+                  placeholder="Describe qué se encontró en la revisión y qué hay que hacer..."
                   className={`w-full bg-zinc-900 border ${errorsPost.diagnostico ? "border-red-500/70" : "border-zinc-800"} focus:border-orange-500/60 rounded-xl py-2.5 px-4 text-white placeholder:text-zinc-600 outline-none resize-none transition-all`} />
                 {errorsPost.diagnostico && <p className="text-red-400 text-xs mt-1 flex items-center gap-1"><AlertCircle size={12}/>{errorsPost.diagnostico}</p>}
               </div>
               {/* Tiempo estimado */}
               <div>
-                <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">Tiempo Estimado de ReparaciÃ³n</label>
+                <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">Tiempo Estimado de Reparación</label>
                 <div className="relative">
                   <select value={formPost.tiempoEstimado} onChange={handleChangePost("tiempoEstimado")}
                     className="appearance-none w-full bg-zinc-900 border border-zinc-800 focus:border-orange-500/60 rounded-xl py-2.5 pl-4 pr-10 text-white outline-none cursor-pointer">
@@ -362,10 +362,10 @@ export const Agenda = () => {
                   <ChevronRight size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none rotate-90" />
                 </div>
               </div>
-              {/* DÃ­a y Hora */}
+              {/* Día y Hora */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">DÃ­a</label>
+                  <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">Día</label>
                   <div className="relative">
                     <select value={formPost.dia} onChange={handleChangePost("dia")}
                       className="appearance-none w-full bg-zinc-900 border border-zinc-800 focus:border-orange-500/60 rounded-xl py-2.5 pl-4 pr-10 text-white outline-none cursor-pointer capitalize">
@@ -391,20 +391,20 @@ export const Agenda = () => {
             <div className="flex gap-3 mt-7">
               <button onClick={closePostModal} className="flex-1 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 rounded-xl font-bold text-sm transition-colors">Cancelar</button>
               <button onClick={handleSubmitPost} className="flex-1 py-2.5 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-400 hover:to-red-500 text-white rounded-xl font-bold text-sm transition-all">
-                Agendar ReparaciÃ³n
+                Agendar Reparación
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* MODAL CONFIRMAR ELIMINACIÃ“N */}
+      {/* MODAL CONFIRMAR ELIMINACIÓN */}
       {confirmDeleteIndex !== null && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-8 w-full max-w-sm shadow-2xl text-center">
             <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center mx-auto mb-5"><Trash2 size={32} className="text-red-400" /></div>
             <h3 className="text-xl font-black text-white mb-2">Cancelar Cita</h3>
-            <p className="text-zinc-400 text-sm mb-7">Esta acciÃ³n eliminarÃ¡ la cita permanentemente.</p>
+            <p className="text-zinc-400 text-sm mb-7">Esta acción eliminará la cita permanentemente.</p>
             <div className="flex gap-3">
               <button onClick={() => setConfirmDeleteIndex(null)} className="flex-1 py-2.5 bg-zinc-900 border border-zinc-800 text-zinc-300 rounded-xl font-bold text-sm">Volver</button>
               <button onClick={() => handleDelete(confirmDeleteIndex)} className="flex-1 py-2.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 rounded-xl font-bold text-sm transition-all">Cancelar Cita</button>
@@ -446,12 +446,12 @@ export const Agenda = () => {
       {/* CALENDARIO + CITAS */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-        {/* LISTA DE DÃAS */}
+        {/* LISTA DE DÍAS */}
         <div className="lg:col-span-3 space-y-3">
           <div className="bg-zinc-950 border border-zinc-800 rounded-[2rem] p-4 space-y-2">
             <div className="flex items-center gap-2 px-4 py-2 text-zinc-400 mb-2">
               <CalendarIcon size={18} />
-              <span className="font-bold text-xs uppercase tracking-widest">PrÃ³ximos dÃ­as</span>
+              <span className="font-bold text-xs uppercase tracking-widest">Próximos días</span>
             </div>
             {dias.map((dia) => (
               <button key={dia.id} onClick={() => setSelectedDay(dia.id)}
@@ -468,7 +468,7 @@ export const Agenda = () => {
           </div>
         </div>
 
-        {/* PANEL DE CITAS DEL DÃA */}
+        {/* PANEL DE CITAS DEL DÍA */}
         <div className="lg:col-span-9">
           <div className="bg-zinc-950 border border-zinc-800 rounded-[2.5rem] p-8 min-h-[400px] flex flex-col">
             <h3 className="text-xl font-bold text-white mb-8 flex items-center gap-3 capitalize">
@@ -482,7 +482,7 @@ export const Agenda = () => {
                 </div>
                 <div>
                   <p className="text-zinc-500 font-bold text-lg">No hay citas programadas</p>
-                  <p className="text-zinc-600 text-sm mt-1">Las nuevas citas que agendes aparecerÃ¡n aquÃ­.</p>
+                  <p className="text-zinc-600 text-sm mt-1">Las nuevas citas que agendes aparecerán aquí.</p>
                 </div>
                 <button onClick={openModal} className="flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 px-6 py-3 rounded-2xl font-bold transition-all active:scale-95">
                   <Plus size={18} />Programar Cita
@@ -506,7 +506,7 @@ export const Agenda = () => {
                           {cita.confirmada && <span className="text-[10px] bg-green-500/10 text-green-400 border border-green-500/20 px-2 py-0.5 rounded-md font-semibold">Confirmada</span>}
                           {cita.esSeguimiento && <span className="text-[10px] bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded-md font-semibold">Seguimiento</span>}
                         </div>
-                        <p className="text-zinc-400 text-sm truncate">{cita.vehiculo} â€” {cita.servicio}</p>
+                        <p className="text-zinc-400 text-sm truncate">{cita.vehiculo} — {cita.servicio}</p>
                         {cita.notas && <p className="text-zinc-600 text-xs mt-1 line-clamp-2">{cita.notas}</p>}
                       </div>
                       {/* Hora + eliminar */}
@@ -527,17 +527,17 @@ export const Agenda = () => {
                           className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg border border-zinc-700 transition-colors"
                         >
                           <ArrowRight size={12} />
-                          {cita.estado === "Pendiente" ? "Iniciar RevisiÃ³n" : cita.estado === "En RevisiÃ³n" ? "Marcar Diagnosticada" : "Avanzar"}
+                          {cita.estado === "Pendiente" ? "Iniciar Revisión" : cita.estado === "En Revisión" ? "Marcar Diagnosticada" : "Avanzar"}
                         </button>
                       )}
                       {/* Agendar 2da cita */}
-                      {cita.tipo === "RevisiÃ³n Inicial" && cita.estado === "Diagnosticada" && (
+                      {cita.tipo === "Revisión Inicial" && cita.estado === "Diagnosticada" && (
                         <button
                           onClick={() => openPostModal(i)}
                           className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 rounded-lg border border-orange-500/30 transition-colors"
                         >
                           <Wrench size={12} />
-                          Agendar ReparaciÃ³n
+                          Agendar Reparación
                         </button>
                       )}
                       {/* Completar */}

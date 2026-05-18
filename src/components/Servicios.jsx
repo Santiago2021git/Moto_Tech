@@ -5,21 +5,21 @@ import {
 } from "lucide-react";
 import { usePageTitle } from '../hooks/usePageTitle';
 
-const CATS_SERVICIO = ["Mantenimiento", "Frenos", "Motor", "Transmision", "Electrico", "Suspension", "Carroceria", "Otros"];
+const CATS_SERVICIO = ["Mantenimiento", "Frenos", "Motor", "Transmisión", "Eléctrico", "Suspensión", "Carrocería", "Otros"];
 const COLORES_S = ["from-blue-600 to-indigo-600","from-purple-600 to-pink-600","from-emerald-500 to-teal-600","from-orange-500 to-red-600","from-cyan-500 to-blue-600"];
 const initialFormS = { titulo: "", categoria: "Mantenimiento", descripcion: "", duracion: "", precio: "", incluye: "" };
 
 export const Servicios = () => {
   usePageTitle("Servicios");
   const [servicios, setServicios] = useState([
-    { titulo: "Cambio de Aceite Completo", categoria: "Mantenimiento", descripcion: "Cambio de aceite de motor y filtro, incluye revision de niveles.", duracion: "45 min", precio: "$50.000", incluye: ["Aceite 10W40", "Filtro de aceite"], popularidad: 95, color: "from-blue-600 to-indigo-600" },
-    { titulo: "Mantenimiento General", categoria: "Mantenimiento", descripcion: "Revision completa de sistemas, ajustes y lubricacion.", duracion: "120 min", precio: "$120.000", incluye: ["Aceite", "Filtros", "Lubricantes"], popularidad: 88, color: "from-purple-600 to-pink-600" },
-    { titulo: "Ajuste de Frenos", categoria: "Frenos", descripcion: "Revision y ajuste del sistema de frenos, incluye pastillas.", duracion: "60 min", precio: "$80.000", incluye: ["Pastillas de freno"], popularidad: 75, color: "from-emerald-500 to-teal-600" },
-    { titulo: "Sincronizacion de Motor", categoria: "Motor", descripcion: "Limpieza de inyectores, cambio de bujias y escaner.", duracion: "90 min", precio: "$150.000", incluye: ["Bujias", "Limpiador"], popularidad: 60, color: "from-orange-500 to-red-600" },
+    { titulo: "Cambio de Aceite Completo", categoria: "Mantenimiento", descripcion: "Cambio de aceite de motor y filtro, incluye revisión de niveles.", duracion: "45 min", precio: "$50.000", incluye: ["Aceite 10W40", "Filtro de aceite"], popularidad: 95, color: "from-blue-600 to-indigo-600" },
+    { titulo: "Mantenimiento General", categoria: "Mantenimiento", descripcion: "Revisión completa de sistemas, ajustes y lubricación.", duracion: "120 min", precio: "$120.000", incluye: ["Aceite", "Filtros", "Lubricantes"], popularidad: 88, color: "from-purple-600 to-pink-600" },
+    { titulo: "Ajuste de Frenos", categoria: "Frenos", descripcion: "Revisión y ajuste del sistema de frenos, incluye pastillas.", duracion: "60 min", precio: "$80.000", incluye: ["Pastillas de freno"], popularidad: 75, color: "from-emerald-500 to-teal-600" },
+    { titulo: "Sincronización de Motor", categoria: "Motor", descripcion: "Limpieza de inyectores, cambio de bujías y escáner.", duracion: "90 min", precio: "$150.000", incluye: ["Bujias", "Limpiador"], popularidad: 60, color: "from-orange-500 to-red-600" },
   ]);
 
   const [busqueda, setBusqueda] = useState("");
-  const [filtroCategoria, setFiltroCategoria] = useState("Todas las categorias");
+  const [filtroCategoria, setFiltroCategoria] = useState("Todas las categorías");
   const [showModal, setShowModal] = useState(false);
   const [editIndex, setEditIndex] = useState(null);
   const [form, setForm] = useState(initialFormS);
@@ -30,7 +30,7 @@ export const Servicios = () => {
   const serviciosFiltrados = servicios.filter(s => {
     const t = busqueda.toLowerCase();
     const coincide = s.titulo.toLowerCase().includes(t) || s.descripcion.toLowerCase().includes(t);
-    const catOk = filtroCategoria === "Todas las categorias" || s.categoria === filtroCategoria;
+    const catOk = filtroCategoria === "Todas las categorías" || s.categoria === filtroCategoria;
     return coincide && catOk;
   });
 
@@ -38,9 +38,9 @@ export const Servicios = () => {
 
   const validate = () => {
     const e = {};
-    if (!form.titulo.trim()) e.titulo = "El titulo es obligatorio.";
-    if (!form.descripcion.trim()) e.descripcion = "La descripcion es obligatoria.";
-    if (!form.duracion.trim()) e.duracion = "La duracion es obligatoria.";
+    if (!form.titulo.trim()) e.titulo = "El título es obligatorio.";
+    if (!form.descripcion.trim()) e.descripcion = "La descripción es obligatoria.";
+    if (!form.duracion.trim()) e.duracion = "La duración es obligatoria.";
     if (!form.precio.trim()) e.precio = "El precio es obligatorio.";
     return e;
   };
@@ -103,13 +103,13 @@ export const Servicios = () => {
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">Titulo *</label>
+                <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">Título *</label>
                 <input value={form.titulo} onChange={handleChange("titulo")} placeholder="Ej: Cambio de aceite completo"
                   className={`w-full bg-zinc-900 border ${errors.titulo ? "border-red-500/70" : "border-zinc-800"} focus:border-purple-500/60 rounded-xl py-2.5 px-4 text-white placeholder:text-zinc-600 outline-none transition-all`} />
                 {errors.titulo && <p className="text-red-400 text-xs mt-1 flex items-center gap-1"><AlertCircle size={12}/>{errors.titulo}</p>}
               </div>
               <div>
-                <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">Categoria</label>
+                <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">Categoría</label>
                 <div className="relative">
                   <select value={form.categoria} onChange={handleChange("categoria")}
                     className="appearance-none w-full bg-zinc-900 border border-zinc-800 focus:border-purple-500/60 rounded-xl py-2.5 pl-4 pr-10 text-white outline-none cursor-pointer">
@@ -119,14 +119,14 @@ export const Servicios = () => {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">Descripcion *</label>
+                <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">Descripción *</label>
                 <textarea value={form.descripcion} onChange={handleChange("descripcion")} rows={3} placeholder="Describe el servicio..."
                   className={`w-full bg-zinc-900 border ${errors.descripcion ? "border-red-500/70" : "border-zinc-800"} focus:border-purple-500/60 rounded-xl py-2.5 px-4 text-white placeholder:text-zinc-600 outline-none resize-none transition-all`} />
                 {errors.descripcion && <p className="text-red-400 text-xs mt-1 flex items-center gap-1"><AlertCircle size={12}/>{errors.descripcion}</p>}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">Duracion *</label>
+                  <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">Duración *</label>
                   <input value={form.duracion} onChange={handleChange("duracion")} placeholder="Ej: 45 min"
                     className={`w-full bg-zinc-900 border ${errors.duracion ? "border-red-500/70" : "border-zinc-800"} focus:border-purple-500/60 rounded-xl py-2.5 px-4 text-white placeholder:text-zinc-600 outline-none transition-all`} />
                   {errors.duracion && <p className="text-red-400 text-xs mt-1 flex items-center gap-1"><AlertCircle size={12}/>{errors.duracion}</p>}
@@ -161,7 +161,7 @@ export const Servicios = () => {
               <Trash2 size={32} className="text-red-400" />
             </div>
             <h3 className="text-xl font-black text-white mb-2">Eliminar Servicio</h3>
-            <p className="text-zinc-400 text-sm mb-7">Esta accion no se puede deshacer. El servicio sera eliminado permanentemente.</p>
+            <p className="text-zinc-400 text-sm mb-7">Esta acción no se puede deshacer. El servicio será eliminado permanentemente.</p>
             <div className="flex gap-3">
               <button onClick={() => setConfirmDeleteIndex(null)} className="flex-1 py-2.5 bg-zinc-900 border border-zinc-800 text-zinc-300 rounded-xl font-bold text-sm">Cancelar</button>
               <button onClick={() => handleDelete(confirmDeleteIndex)} className="flex-1 py-2.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 rounded-xl font-bold text-sm transition-all">Eliminar</button>
@@ -195,7 +195,7 @@ export const Servicios = () => {
           <p className="text-3xl font-black text-white">77 min</p>
         </div>
         <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-5 flex flex-col justify-center shadow-sm">
-          <div className="flex items-center gap-2 text-zinc-500 mb-2"><Activity size={16} /><p className="text-sm font-medium">Categorias</p></div>
+          <div className="flex items-center gap-2 text-zinc-500 mb-2"><Activity size={16} /><p className="text-sm font-medium">Categorías</p></div>
           <p className="text-3xl font-black text-white">{new Set(servicios.map(s => s.categoria)).size}</p>
         </div>
       </div>
@@ -209,7 +209,7 @@ export const Servicios = () => {
         <div className="relative">
           <select value={filtroCategoria} onChange={(e) => setFiltroCategoria(e.target.value)}
             className="appearance-none w-full md:w-auto bg-zinc-950 border border-zinc-800 hover:border-zinc-700 rounded-2xl py-3 pl-5 pr-12 text-white font-medium outline-none transition-all cursor-pointer shadow-sm">
-            <option>Todas las categorias</option>
+            <option>Todas las categorías</option>
             {CATS_SERVICIO.map(c => <option key={c}>{c}</option>)}
           </select>
           <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" size={18} />
@@ -220,7 +220,7 @@ export const Servicios = () => {
         <div className="flex flex-col items-center justify-center py-16 text-zinc-600">
           <Search size={40} className="mb-4 text-zinc-700" />
           <p className="font-bold text-lg">No se encontraron servicios</p>
-          <p className="text-sm mt-1">Intenta con otro termino de busqueda o filtro.</p>
+          <p className="text-sm mt-1">Intenta con otro término de búsqueda o filtro.</p>
         </div>
       )}
 

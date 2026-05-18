@@ -5,18 +5,18 @@ import {
 } from "lucide-react";
 import { usePageTitle } from '../hooks/usePageTitle';
 
-const ROLES = ["Mecanico Senior", "Mecanico Junior", "Especialista Electrico", "Auxiliar de Taller", "Administrativo"];
+const ROLES = ["Mecánico Senior", "Mecánico Junior", "Especialista Eléctrico", "Auxiliar de Taller", "Administrativo"];
 const ESTADOS_EMP = ["Disponible", "Ocupado", "Inactivo"];
 const COLORES_EMP = ["from-blue-600 to-indigo-600", "from-purple-600 to-pink-600", "from-emerald-500 to-teal-600", "from-orange-500 to-red-600", "from-cyan-500 to-blue-600"];
-const initialFormE = { nombre: "", rol: "Mecanico Senior", especialidades: "", estado: "Disponible" };
+const initialFormE = { nombre: "", rol: "Mecánico Senior", especialidades: "", estado: "Disponible" };
 
 export const Empleados = () => {
   usePageTitle("Empleados");
   const [empleados, setEmpleados] = useState([
-    { nombre: "Roberto Gomez", iniciales: "RG", rol: "Mecanico Senior", estado: "Ocupado", rating: 4.8, especialidades: ["Motor", "Transmision", "Suspension"], servicios: 342, eficiencia: 95, ingreso: "marzo de 2020", avatarColor: "from-blue-600 to-indigo-600" },
-    { nombre: "Laura Sanchez", iniciales: "LS", rol: "Mecanica Junior", estado: "Disponible", rating: 4.6, especialidades: ["Mantenimiento", "Frenos", "Electrico"], servicios: 156, eficiencia: 88, ingreso: "junio de 2022", avatarColor: "from-purple-600 to-pink-600" },
-    { nombre: "Carlos Ramirez", iniciales: "CR", rol: "Especialista Electrico", estado: "Inactivo", rating: 4.9, especialidades: ["Diagnostico", "Inyeccion", "Sensores"], servicios: 512, eficiencia: 98, ingreso: "enero de 2019", avatarColor: "from-emerald-500 to-teal-600" },
-    { nombre: "Andres Torres", iniciales: "AT", rol: "Auxiliar de Taller", estado: "Disponible", rating: 4.2, especialidades: ["Llantas", "Fluidos", "Lavado"], servicios: 89, eficiencia: 75, ingreso: "noviembre de 2023", avatarColor: "from-orange-500 to-red-600" },
+    { nombre: "Roberto Gómez", iniciales: "RG", rol: "Mecánico Senior", estado: "Ocupado", rating: 4.8, especialidades: ["Motor", "Transmisión", "Suspensión"], servicios: 342, eficiencia: 95, ingreso: "marzo de 2020", avatarColor: "from-blue-600 to-indigo-600" },
+    { nombre: "Laura Sánchez", iniciales: "LS", rol: "Mecánica Junior", estado: "Disponible", rating: 4.6, especialidades: ["Mantenimiento", "Frenos", "Electrico"], servicios: 156, eficiencia: 88, ingreso: "junio de 2022", avatarColor: "from-purple-600 to-pink-600" },
+    { nombre: "Carlos Ramírez", iniciales: "CR", rol: "Especialista Eléctrico", estado: "Inactivo", rating: 4.9, especialidades: ["Diagnóstico", "Inyección", "Sensores"], servicios: 512, eficiencia: 98, ingreso: "enero de 2019", avatarColor: "from-emerald-500 to-teal-600" },
+    { nombre: "Andrés Torres", iniciales: "AT", rol: "Auxiliar de Taller", estado: "Disponible", rating: 4.2, especialidades: ["Llantas", "Fluidos", "Lavado"], servicios: 89, eficiencia: 75, ingreso: "noviembre de 2023", avatarColor: "from-orange-500 to-red-600" },
   ]);
 
   const [busqueda, setBusqueda] = useState("");
@@ -193,7 +193,7 @@ export const Empleados = () => {
           <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-8 w-full max-w-sm shadow-2xl text-center">
             <div className="w-16 h-16 bg-purple-500/10 rounded-2xl flex items-center justify-center mx-auto mb-5"><Award size={32} className="text-purple-400" /></div>
             <h3 className="text-xl font-black text-white mb-2">Asignar Servicio</h3>
-            <p className="text-zinc-400 text-sm mb-3">Asignar proximo servicio disponible a:</p>
+            <p className="text-zinc-400 text-sm mb-3">Asignar próximo servicio disponible a:</p>
             <p className="text-white font-black text-lg mb-7">{empleados[asignarIndex]?.nombre}</p>
             <div className="flex gap-3">
               <button onClick={() => setAsignarIndex(null)} className="flex-1 py-2.5 bg-zinc-900 border border-zinc-800 text-zinc-300 rounded-xl font-bold text-sm">Cancelar</button>
@@ -208,7 +208,7 @@ export const Empleados = () => {
           <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-8 w-full max-w-sm shadow-2xl text-center">
             <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center mx-auto mb-5"><Trash2 size={32} className="text-red-400" /></div>
             <h3 className="text-xl font-black text-white mb-2">Eliminar Empleado</h3>
-            <p className="text-zinc-400 text-sm mb-7">Esta accion no se puede deshacer.</p>
+            <p className="text-zinc-400 text-sm mb-7">Esta acción no se puede deshacer.</p>
             <div className="flex gap-3">
               <button onClick={() => setConfirmDeleteIndex(null)} className="flex-1 py-2.5 bg-zinc-900 border border-zinc-800 text-zinc-300 rounded-xl font-bold text-sm">Cancelar</button>
               <button onClick={() => handleDelete(confirmDeleteIndex)} className="flex-1 py-2.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 rounded-xl font-bold text-sm transition-all">Eliminar</button>
@@ -219,8 +219,8 @@ export const Empleados = () => {
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-4xl font-black text-white tracking-tight">Gestion de Personal</h2>
-          <p className="text-zinc-500 mt-1 font-medium">Administra el equipo, metricas y asignaciones</p>
+          <h2 className="text-4xl font-black text-white tracking-tight">Gestión de Personal</h2>
+          <p className="text-zinc-500 mt-1 font-medium">Administra el equipo, métricas y asignaciones</p>
         </div>
         <button onClick={() => openModal()} className="flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white px-6 py-3 rounded-2xl font-bold transition-all shadow-lg shadow-purple-600/20 active:scale-95">
           <Plus size={20} strokeWidth={3} />

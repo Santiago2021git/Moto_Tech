@@ -5,13 +5,23 @@ import {
   FileText, Calendar, Edit3, Package, Camera, Trash2
 } from 'lucide-react';
 
-export const DetalleVehiculo = ({ vehiculo, onBack }) => {
+const ESTADOS_V = ["Sin Atender", "En Proceso", "Finalizada"];
+
+export const DetalleVehiculo = ({ vehiculo, onBack, onUpdate }) => {
   const [activeTab, setActiveTab] = useState('General');
 
   const tabs = ['General', 'Servicio', 'Costos', 'Repuestos', 'Evidencias'];
 
+  const handleActualizarEstado = () => {
+    if (!onUpdate) return;
+    const currentIdx = ESTADOS_V.indexOf(vehiculo?.estado || 'Sin Atender');
+    const nextEstado = ESTADOS_V[(currentIdx + 1) % ESTADOS_V.length];
+    const ahora = new Date().toLocaleString('es-CO', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    onUpdate({ ...vehiculo, estado: nextEstado, ultimoCambioEstado: ahora });
+  };
+
   const stats = [
-    { label: 'Tiempo de Espera', value: 'hace 10 días', icon: Clock, color: 'text-orange-500', bg: 'bg-orange-500/10' },
+    { label: 'Tiempo de Espera', value: vehiculo?.ingreso || 'hace 10 días', icon: Clock, color: 'text-orange-500', bg: 'bg-orange-500/10' },
     { label: 'Costo Total', value: '$245.000', icon: DollarSign, color: 'text-green-500', bg: 'bg-green-500/10' },
     { label: 'Evidencias', value: '0 foto(s)', icon: ImageIcon, color: 'text-purple-500', bg: 'bg-purple-500/10' },
   ];
@@ -43,7 +53,7 @@ export const DetalleVehiculo = ({ vehiculo, onBack }) => {
           <div className="flex-1 md:flex-none flex items-center gap-2 bg-blue-500/10 text-blue-400 border border-blue-500/20 px-4 py-2 rounded-xl text-sm font-bold">
             <Wrench size={16} /> {vehiculo?.estado || "En Proceso"}
           </div>
-          <button className="flex-1 md:flex-none bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition-all">
+          <button onClick={handleActualizarEstado} className="flex-1 md:flex-none bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition-all">
             Actualizar Estado
           </button>
         </div>
@@ -92,10 +102,19 @@ export const DetalleVehiculo = ({ vehiculo, onBack }) => {
                 <InfoBlock label="Placa" value={vehiculo?.placa || "ABC123"} />
                 <InfoBlock label="Año" value={vehiculo?.año || "2022"} />
                 <InfoBlock label="Color" value="Rojo" />
-                <InfoBlock label="Ingreso" value="20 feb 2026 - 09:00" />
+                <InfoBlock label="Ingreso" value={vehiculo?.ingreso || '—'} />
+                {vehiculo?.ultimoCambioEstado && <InfoBlock label="Último cambio de estado" value={vehiculo.ultimoCambioEstado} />}
               </div>
             </section>
-            {/* ... Sección de Propietario omitida para brevedad pero sigue la misma lógica ... */}
+            <section className="bg-zinc-950 border border-zinc-800 rounded-[2.5rem] p-8">
+              <div className="flex items-center gap-3 mb-8 text-zinc-400">
+                <User size={20} /> <h3 className="text-lg font-bold text-white uppercase tracking-tighter">Propietario</h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-8">
+                <InfoBlock label="Cliente" value={vehiculo?.cliente || '—'} />
+                <InfoBlock label="Teléfono" value={vehiculo?.telefono || '—'} />
+              </div>
+            </section>
           </div>
         )}
 

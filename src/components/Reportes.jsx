@@ -58,10 +58,20 @@ export const Reportes = () => {
           <h2 className="text-4xl font-black text-white tracking-tight">Reportes y Estadísticas</h2>
           <p className="text-zinc-500 mt-1 font-medium">Visualiza métricas clave del negocio y rendimiento general.</p>
         </div>
-        <button className="flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-white px-6 py-3 rounded-2xl font-bold transition-all shadow-sm active:scale-95">
-          <Download size={18} />
-          Exportar PDF
-        </button>
+        <div className="flex gap-3">
+          <button onClick={() => window.print()} className="flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-white px-6 py-3 rounded-2xl font-bold transition-all shadow-sm active:scale-95">
+            <Download size={18} />
+            Exportar PDF
+          </button>
+          <button onClick={() => {
+            const rows = [["Mes","Ingresos (M COP)"],...ingresosMensuales.map(r=>[r.mes,r.valor])];
+            const csv = rows.map(r=>r.join(",")).join("\n");
+            const a = document.createElement("a"); a.href = "data:text/csv;charset=utf-8,"+encodeURIComponent(csv); a.download = "reporte_ingresos.csv"; a.click();
+          }} className="flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-white px-6 py-3 rounded-2xl font-bold transition-all shadow-sm active:scale-95">
+            <FileText size={18} />
+            Exportar CSV
+          </button>
+        </div>
       </div>
 
       {/* KPI CARDS GRID */}
