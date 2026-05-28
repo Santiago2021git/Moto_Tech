@@ -145,7 +145,6 @@ const notifPrefs = [
   { key: "stockBajo", label: "Stock Bajo", desc: "Alerta cuando un repuesto esté por debajo del stock mínimo", default: true },
   { key: "servicios", label: "Servicios Completados", desc: "Notificación cuando se complete un servicio", default: true },
   { key: "mensajes", label: "Mensajes de Clientes", desc: "Recibe notificaciones de mensajes de clientes", default: true },
-  { key: "facturas", label: "Facturas Vencidas", desc: "Alerta sobre facturas que estén vencidas", default: true },
   { key: "reportes", label: "Reportes Semanales", desc: "Recibe un resumen semanal de las actividades del taller", default: false },
 ];
 
