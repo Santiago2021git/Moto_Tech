@@ -9,10 +9,18 @@ export const SeleccionRol = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 flex items-center justify-center p-6">
       <div className="max-w-3xl w-full">
         <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 mb-4 shadow-lg shadow-cyan-500/20">
-            <Bike size={32} className="text-white" />
-          </div>
-          <h1 className="text-4xl font-bold text-white mb-2">MotoTech</h1>
+        <div className="relative flex items-center justify-center w-28 h-28 sm:w-32 sm:h-32 rounded-3xl overflow-hidden border border-cyan-500/20 shadow-xl shadow-cyan-500/20 bg-gradient-to-br from-cyan-500/10 to-purple-500/10 backdrop-blur-sm group mx-auto">
+          
+          <img
+            src="/Logo_MotoTech.jpeg"
+            alt="Logo MotoTech"
+            className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-110"
+          />
+
+          {/* Overlay */}
+          <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-all duration-500" />
+        </div>
+          <h1 className="text-4xl font-bold text-white mb-2 p-4">MotoTech</h1>
           <p className="text-gray-400">Selecciona cómo deseas ingresar</p>
         </div>
 

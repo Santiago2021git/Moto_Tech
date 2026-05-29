@@ -182,6 +182,7 @@ export function Layout({ children }) {
             >
               <Menu size={24} />
             </button>
+            <img src="/Logo_MotoTech.jpeg" alt="Logo MotoTech" className="w-10 h-10 rounded-full" />
             <h2 className={`text-lg font-semibold ${theme.primaryText} hidden sm:block`}>
               {tallerActivo?.nombre}
             </h2>

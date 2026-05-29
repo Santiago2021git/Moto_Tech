@@ -8,7 +8,7 @@
 export const talleres = [
   {
     id: "taller-a",
-    nombre: "MotoTech Pereira",
+    nombre: "MotoTech",
     eslogan: "Gestión de taller",
     iniciales: "MT",
     logoEmoji: "🏍️",
