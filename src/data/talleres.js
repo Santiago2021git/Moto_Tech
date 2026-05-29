@@ -11,7 +11,7 @@ export const talleres = [
     nombre: "MotoTech",
     eslogan: "Gestión de taller",
     iniciales: "MT",
-    logoEmoji: "🏍️",
+    logoEmoji: "⚙️",
     color: "cyan", // primary tailwind color
     telefono: "+57 606 312 4500",
     email: "contacto@mototechpereira.co",
