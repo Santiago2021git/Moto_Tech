@@ -1,9 +1,11 @@
 import React from "react";
-import { useNavigate, useLocation, Link } from "react-router-dom";
-import { Bike, LayoutDashboard, MapPin, LogOut, Phone, Mail } from "lucide-react";
+// 1. Importamos Outlet desde react-router-dom
+import { useNavigate, useLocation, Link, Outlet } from "react-router-dom";
+import { Bike, MapPin, LogOut, Phone, Mail } from "lucide-react";
 import { useAuth } from "../../auth/AuthContext";
 
-export function ClienteLayout({ children }) {
+// 2. Quitamos { children } de los parámetros
+export function ClienteLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, tallerActivo, logout } = useAuth();
@@ -23,6 +25,7 @@ export function ClienteLayout({ children }) {
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 text-gray-100">
+      {/* SIDEBAR */}
       <aside className="hidden md:flex flex-col w-64 bg-gray-900/80 backdrop-blur border-r border-gray-800 p-5">
         <div className="mb-8">
           <div className="flex items-center gap-2">
@@ -76,7 +79,9 @@ export function ClienteLayout({ children }) {
         </button>
       </aside>
 
+      {/* CONTENEDOR DERECHO */}
       <div className="flex flex-col flex-1 w-full overflow-hidden">
+        {/* HEADER */}
         <header className="flex justify-between items-center bg-gray-900/70 border-b border-gray-800 px-4 md:px-6 py-4 sticky top-0 z-30 backdrop-blur-sm">
           <div className="md:hidden flex items-center gap-2">
             <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center text-white font-bold text-sm">
@@ -116,7 +121,11 @@ export function ClienteLayout({ children }) {
           </div>
         </header>
 
-        <main className="flex-1 p-4 md:p-6 overflow-y-auto w-full">{children}</main>
+        {/* MAIN */}
+        {/* 3. Reemplazamos {children} por <Outlet /> aquí */}
+        <main className="flex-1 p-4 md:p-6 overflow-y-auto w-full">
+          <Outlet /> 
+        </main>
       </div>
     </div>
   );

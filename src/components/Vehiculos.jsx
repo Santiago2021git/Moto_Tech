@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { DetalleVehiculo } from './DetalleVehiculo';
+import { useApp } from '../context/AppContext';
 
 const ESTADOS_V = ["Sin Atender", "En Proceso", "Finalizada"];
 const MARCAS = ["Honda", "Yamaha", "Kawasaki", "Suzuki", "Ducati", "BMW", "KTM", "Royal Enfield", "Harley-Davidson", "Otra"];
@@ -17,30 +18,32 @@ const statusStyle = (estado) => {
 };
 
 const FILTER_TABS = [
-  { label: 'Todos', value: 'Todos' },
+  { label: 'Todos',       value: 'Todos'       },
   { label: 'Sin Atender', value: 'Sin Atender' },
-  { label: 'En Proceso', value: 'En Proceso' },
-  { label: 'Finalizadas', value: 'Finalizada' },
+  { label: 'En Proceso',  value: 'En Proceso'  },
+  { label: 'Finalizadas', value: 'Finalizada'  },
 ];
 
 export const Vehiculos = () => {
   usePageTitle("Vehículos");
+  const { vehiculos, agregarVehiculo, actualizarVehiculo, eliminarVehiculo, clientes } = useApp();
+
   const [vehiculoSeleccionado, setVehiculoSeleccionado] = useState(null);
-  const [filter, setFilter] = useState('Todos');
+  const [filter,   setFilter]   = useState('Todos');
   const [busqueda, setBusqueda] = useState('');
-
-  const [vehiculos, setVehiculos] = useState([
-    { id: 1, placa: 'ABC123', marca: 'Honda', modelo: 'CBR 600RR', cliente: 'Carlos Martínez', telefono: '+57 310 456 7890', año: '2022', estado: 'En Proceso', ingreso: 'hace 10 días', servicios: 1 },
-    { id: 2, placa: 'XYZ789', marca: 'Yamaha', modelo: 'MT-07', cliente: 'Laura Gómez', telefono: '+57 320 789 4561', año: '2021', estado: 'Sin Atender', ingreso: 'hace 8 días', servicios: 1 },
-    { id: 3, placa: 'DEF456', marca: 'Kawasaki', modelo: 'Z900', cliente: 'Andrés Herrera', telefono: '+57 315 234 5678', año: '2023', estado: 'Finalizada', ingreso: 'hace 3 días', servicios: 2 },
-  ]);
-
   const [showModal, setShowModal] = useState(false);
-  const [editIndex, setEditIndex] = useState(null);
-  const [form, setForm] = useState(initialFormV);
-  const [errors, setErrors] = useState({});
-  const [toast, setToast] = useState(null);
-  const [confirmDeleteIndex, setConfirmDeleteIndex] = useState(null);
+  const [editId,    setEditId]    = useState(null);
+  const [form,      setForm]      = useState(initialFormV);
+  const [errors,    setErrors]    = useState({});
+  const [toast,     setToast]     = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+
+  // Sugerencias de clientes al escribir el nombre
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const sugerencias = clientes.filter(c =>
+    form.cliente.length > 0 &&
+    c.nombre.toLowerCase().includes(form.cliente.toLowerCase())
+  );
 
   const vehiculosFiltrados = vehiculos.filter(v => {
     const t = busqueda.toLowerCase();
@@ -53,66 +56,93 @@ export const Vehiculos = () => {
 
   const validate = () => {
     const e = {};
-    if (!form.placa.trim()) e.placa = 'La placa es obligatoria.';
-    if (!form.modelo.trim()) e.modelo = 'El modelo es obligatorio.';
+    if (!form.placa.trim())   e.placa   = 'La placa es obligatoria.';
+    if (!form.modelo.trim())  e.modelo  = 'El modelo es obligatorio.';
     if (!form.cliente.trim()) e.cliente = 'El propietario es obligatorio.';
     return e;
   };
 
-  const openModal = (index = null) => {
-    if (index !== null) {
-      const v = vehiculos[index];
-      setForm({ placa: v.placa, marca: v.marca, modelo: v.modelo, año: v.año, cliente: v.cliente, telefono: v.telefono || '', estado: v.estado });
-      setEditIndex(index);
+  const openModal = (vehiculo = null) => {
+    if (vehiculo) {
+      setForm({ placa: vehiculo.placa, marca: vehiculo.marca, modelo: vehiculo.modelo, año: vehiculo.año, cliente: vehiculo.cliente, telefono: vehiculo.telefono || '', estado: vehiculo.estado });
+      setEditId(vehiculo.id);
     } else {
       setForm(initialFormV);
-      setEditIndex(null);
+      setEditId(null);
     }
     setErrors({});
     setShowModal(true);
   };
 
-  const closeModal = () => { setShowModal(false); setErrors({}); };
+  const closeModal = () => { setShowModal(false); setErrors({}); setShowSuggestions(false); };
 
   const handleSubmit = () => {
     const e = validate();
     if (Object.keys(e).length > 0) { setErrors(e); return; }
-    if (editIndex !== null) {
-      setVehiculos(prev => prev.map((v, i) => i === editIndex
-        ? { ...v, placa: form.placa.toUpperCase(), marca: form.marca, modelo: form.modelo, año: form.año, cliente: form.cliente, telefono: form.telefono, estado: form.estado }
-        : v));
+
+    if (editId !== null) {
+      actualizarVehiculo(editId, {
+        placa: form.placa.toUpperCase(), marca: form.marca, modelo: form.modelo,
+        año: form.año, cliente: form.cliente, telefono: form.telefono, estado: form.estado,
+      });
+      // Actualiza el vehículo seleccionado si está abierto en detalle
+      if (vehiculoSeleccionado?.id === editId) {
+        setVehiculoSeleccionado(prev => ({ ...prev, ...form, placa: form.placa.toUpperCase() }));
+      }
       showToast('Vehículo actualizado correctamente.');
     } else {
-      setVehiculos(prev => [...prev, {
-        id: Date.now(), placa: form.placa.toUpperCase(), marca: form.marca, modelo: form.modelo,
+      // Formateamos la fecha corta actual como fallback por si el contexto no inyecta "ingreso"
+      const fechaHoy = new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+      
+      agregarVehiculo({
+        placa: form.placa.toUpperCase(), marca: form.marca, modelo: form.modelo,
         año: form.año, cliente: form.cliente, telefono: form.telefono, estado: form.estado,
-        ingreso: 'recién ingresado', servicios: 0
-      }]);
+        ingreso: fechaHoy
+      });
       showToast('Vehículo registrado correctamente.');
     }
     closeModal();
   };
 
-  const handleDelete = (index) => {
-    setVehiculos(prev => prev.filter((_, i) => i !== index));
-    setConfirmDeleteIndex(null);
+  const handleDelete = (id) => {
+    eliminarVehiculo(id);
+    setConfirmDeleteId(null);
     showToast('Vehículo eliminado.');
   };
 
   const handleChange = (field) => (e) => {
     setForm(prev => ({ ...prev, [field]: e.target.value }));
     if (errors[field]) setErrors(prev => ({ ...prev, [field]: undefined }));
+    if (field === 'cliente') setShowSuggestions(true);
   };
 
+  const seleccionarCliente = (cliente) => {
+    setForm(prev => ({ ...prev, cliente: cliente.nombre, telefono: cliente.telefono || prev.telefono }));
+    setShowSuggestions(false);
+    if (errors.cliente) setErrors(prev => ({ ...prev, cliente: undefined }));
+  };
+
+  // Si hay vehículo seleccionado, muestra su detalle
   if (vehiculoSeleccionado) {
-    return <DetalleVehiculo vehiculo={vehiculoSeleccionado} onBack={() => setVehiculoSeleccionado(null)} onUpdate={(updated) => { setVehiculos(prev => prev.map(v => v.id === updated.id ? updated : v)); setVehiculoSeleccionado(updated); }} />;
+    const vehiculoActualizado = vehiculos.find(v => v.id === vehiculoSeleccionado.id) || vehiculoSeleccionado;
+    return (
+      <DetalleVehiculo
+        vehiculo={vehiculoActualizado}
+        onBack={() => setVehiculoSeleccionado(null)}
+        onUpdate={(updated) => {
+          actualizarVehiculo(updated.id, updated);
+          setVehiculoSeleccionado(updated);
+        }}
+      />
+    );
   }
 
   return (
     <div className="animate-in space-y-8 pb-10">
 
+      {/* TOAST */}
       {toast && (
-        <div className="fixed top-6 right-6 z-50 flex items-center gap-3 bg-zinc-900 border border-green-500/40 text-green-400 px-5 py-3 rounded-2xl shadow-xl">
+        <div className="fixed top-6 right-6 z-50 flex items-center gap-3 bg-zinc-900 border border-green-500/40 text-green-400 px-5 py-3 rounded-2xl shadow-xl animate-in">
           <Check size={18} /><span className="text-sm font-semibold">{toast}</span>
         </div>
       )}
@@ -122,7 +152,7 @@ export const Vehiculos = () => {
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-8 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-black text-white">{editIndex !== null ? 'Editar Vehículo' : 'Nuevo Vehículo'}</h3>
+              <h3 className="text-xl font-black text-white">{editId !== null ? 'Editar Vehículo' : 'Nuevo Vehículo'}</h3>
               <button onClick={closeModal} className="text-zinc-500 hover:text-white"><X size={22} /></button>
             </div>
             <div className="space-y-4">
@@ -135,7 +165,7 @@ export const Vehiculos = () => {
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">Año</label>
-                  <input value={form.año} onChange={handleChange('año')} placeholder="2024"
+                  <input value={form.año} onChange={handleChange('año')} placeholder="2026"
                     className="w-full bg-zinc-900 border border-zinc-800 focus:border-blue-500/60 rounded-xl py-2.5 px-4 text-white placeholder:text-zinc-600 outline-none transition-all" />
                 </div>
               </div>
@@ -157,12 +187,37 @@ export const Vehiculos = () => {
                   {errors.modelo && <p className="text-red-400 text-xs mt-1 flex items-center gap-1"><AlertCircle size={12} />{errors.modelo}</p>}
                 </div>
               </div>
-              <div>
+
+              {/* Propietario con autocompletado de clientes */}
+              <div className="relative">
                 <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">Propietario *</label>
-                <input value={form.cliente} onChange={handleChange('cliente')} placeholder="Nombre completo"
-                  className={`w-full bg-zinc-900 border ${errors.cliente ? 'border-red-500/70' : 'border-zinc-800'} focus:border-blue-500/60 rounded-xl py-2.5 px-4 text-white placeholder:text-zinc-600 outline-none transition-all`} />
+                <input
+                  value={form.cliente}
+                  onChange={handleChange('cliente')}
+                  onFocus={() => setShowSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                  placeholder="Nombre completo"
+                  className={`w-full bg-zinc-900 border ${errors.cliente ? 'border-red-500/70' : 'border-zinc-800'} focus:border-blue-500/60 rounded-xl py-2.5 px-4 text-white placeholder:text-zinc-600 outline-none transition-all`}
+                />
                 {errors.cliente && <p className="text-red-400 text-xs mt-1 flex items-center gap-1"><AlertCircle size={12} />{errors.cliente}</p>}
+                
+                {/* Dropdown de sugerencias */}
+                {showSuggestions && sugerencias.length > 0 && (
+                  <div className="absolute z-50 top-full mt-1 w-full bg-zinc-900 border border-zinc-700 rounded-xl shadow-xl overflow-hidden">
+                    {sugerencias.map(c => (
+                      <button
+                        key={c.id}
+                        onMouseDown={() => seleccionarCliente(c)}
+                        className="w-full text-left px-4 py-2.5 hover:bg-zinc-800 transition-colors"
+                      >
+                        <p className="text-white text-sm font-semibold">{c.nombre}</p>
+                        {c.telefono && <p className="text-zinc-500 text-xs">{c.telefono}</p>}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
+
               <div>
                 <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">Teléfono</label>
                 <input value={form.telefono} onChange={handleChange('telefono')} placeholder="+57 300 000 0000"
@@ -182,7 +237,7 @@ export const Vehiculos = () => {
             <div className="flex gap-3 mt-7">
               <button onClick={closeModal} className="flex-1 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 rounded-xl font-bold text-sm transition-colors">Cancelar</button>
               <button onClick={handleSubmit} className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-sm transition-all">
-                {editIndex !== null ? 'Guardar Cambios' : 'Registrar Vehículo'}
+                {editId !== null ? 'Guardar Cambios' : 'Registrar Vehículo'}
               </button>
             </div>
           </div>
@@ -190,15 +245,15 @@ export const Vehiculos = () => {
       )}
 
       {/* CONFIRM DELETE */}
-      {confirmDeleteIndex !== null && (
+      {confirmDeleteId !== null && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-8 w-full max-w-sm shadow-2xl text-center">
             <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center mx-auto mb-5"><Trash2 size={32} className="text-red-400" /></div>
             <h3 className="text-xl font-black text-white mb-2">Eliminar Vehículo</h3>
             <p className="text-zinc-400 text-sm mb-7">Esta acción no se puede deshacer.</p>
             <div className="flex gap-3">
-              <button onClick={() => setConfirmDeleteIndex(null)} className="flex-1 py-2.5 bg-zinc-900 border border-zinc-800 text-zinc-300 rounded-xl font-bold text-sm">Cancelar</button>
-              <button onClick={() => handleDelete(confirmDeleteIndex)} className="flex-1 py-2.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 rounded-xl font-bold text-sm transition-all">Eliminar</button>
+              <button onClick={() => setConfirmDeleteId(null)} className="flex-1 py-2.5 bg-zinc-900 border border-zinc-800 text-zinc-300 rounded-xl font-bold text-sm">Cancelar</button>
+              <button onClick={() => handleDelete(confirmDeleteId)} className="flex-1 py-2.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 rounded-xl font-bold text-sm transition-all">Eliminar</button>
             </div>
           </div>
         </div>
@@ -208,7 +263,10 @@ export const Vehiculos = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-4xl font-black text-white tracking-tight">Vehículos</h2>
-          <p className="text-zinc-500 mt-1 font-medium">Gestión de motos en el taller</p>
+          <p className="text-zinc-500 mt-1 font-medium">
+            Gestión de motos en el taller
+            <span className="ml-2 text-zinc-600 font-mono text-sm">({vehiculos.length} registrados)</span>
+          </p>
         </div>
         <button onClick={() => openModal()} className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-2xl font-bold transition-all shadow-lg shadow-blue-600/20 active:scale-95">
           <Plus size={20} strokeWidth={3} />
@@ -224,7 +282,7 @@ export const Vehiculos = () => {
             type="text"
             value={busqueda}
             onChange={e => setBusqueda(e.target.value)}
-            placeholder="Buscar por placa, propietario..."
+            placeholder="Buscar por placa, propietario, marca..."
             className="w-full bg-transparent py-2.5 pl-10 pr-4 text-sm text-zinc-300 placeholder:text-zinc-600 outline-none"
           />
         </div>
@@ -248,73 +306,72 @@ export const Vehiculos = () => {
         <div className="flex flex-col items-center justify-center py-16 text-zinc-600">
           <Bike size={40} className="mb-4 text-zinc-700" />
           <p className="font-bold text-lg">No se encontraron vehículos</p>
+          {busqueda && <p className="text-sm mt-1 text-zinc-700">Intenta con otro término de búsqueda</p>}
         </div>
       )}
 
       {/* GRID DE CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {vehiculosFiltrados.map((v) => {
-          const realIndex = vehiculos.indexOf(v);
-          return (
-            <div
-              key={v.id}
-              onClick={() => setVehiculoSeleccionado(v)}
-              className="bg-zinc-950 border border-zinc-800 rounded-[2.5rem] p-8 hover:border-blue-500/30 transition-all group cursor-pointer relative overflow-hidden active:scale-[0.98]"
-            >
-              <div className="flex justify-between items-start mb-6">
-                <div className="flex gap-5 items-center">
-                  <div className="w-16 h-16 rounded-2xl bg-blue-600/10 flex items-center justify-center text-blue-500 border border-blue-500/20">
-                    <Bike size={32} />
-                  </div>
-                  <div>
-                    <h3 className="text-2xl font-black text-white leading-tight">{v.marca} {v.modelo}</h3>
-                    <p className="text-zinc-500 font-mono text-sm tracking-widest uppercase">Placa: <span className="text-zinc-300">{v.placa}</span></p>
-                  </div>
+        {vehiculosFiltrados.map((v) => (
+          <div
+            key={v.id}
+            onClick={() => setVehiculoSeleccionado(v)}
+            className="bg-zinc-950 border border-zinc-800 rounded-[2.5rem] p-8 hover:border-blue-500/30 transition-all group cursor-pointer relative overflow-hidden active:scale-[0.98]"
+          >
+            <div className="flex justify-between items-start mb-6">
+              <div className="flex gap-5 items-center">
+                <div className="w-16 h-16 rounded-2xl bg-blue-600/10 flex items-center justify-center text-blue-500 border border-blue-500/20">
+                  <Bike size={32} />
                 </div>
-                <span className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider ${statusStyle(v.estado)}`}>
-                  {v.estado}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-y-4 mb-8">
-                <div className="space-y-1">
-                  <p className="text-[10px] uppercase font-bold text-zinc-600 tracking-widest">Propietario</p>
-                  <p className="text-zinc-200 font-semibold">{v.cliente}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] uppercase font-bold text-zinc-600 tracking-widest">Año</p>
-                  <p className="text-zinc-200 font-semibold">{v.año}</p>
+                <div>
+                  <h3 className="text-2xl font-black text-white leading-tight">{v.marca} {v.modelo}</h3>
+                  <p className="text-zinc-500 font-mono text-sm tracking-widest uppercase">Placa: <span className="text-zinc-300">{v.placa}</span></p>
                 </div>
               </div>
+              <span className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider ${statusStyle(v.estado)}`}>
+                {v.estado}
+              </span>
+            </div>
 
-              <div className="pt-6 border-t border-zinc-900 flex justify-between items-center">
-                <div className="flex items-center gap-2 text-zinc-500 text-sm">
-                  <Clock size={16} />
-                  <span>{v.ingreso}</span>
-                </div>
-                <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                  <button
-                    onClick={() => openModal(realIndex)}
-                    className="p-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-xl border border-zinc-800 transition-colors"
-                    title="Editar"
-                  >
-                    <Edit2 size={15} />
-                  </button>
-                  <button
-                    onClick={() => setConfirmDeleteIndex(realIndex)}
-                    className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-xl border border-red-500/20 transition-colors"
-                    title="Eliminar"
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                  <span className="text-blue-500 font-bold flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-1 text-sm">
-                    Ver detalle <MoreVertical size={14} />
-                  </span>
-                </div>
+            <div className="grid grid-cols-2 gap-y-4 mb-8">
+              <div className="space-y-1">
+                <p className="text-[10px] uppercase font-bold text-zinc-600 tracking-widest">Propietario</p>
+                <p className="text-zinc-200 font-semibold">{v.cliente}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] uppercase font-bold text-zinc-600 tracking-widest">Año</p>
+                <p className="text-zinc-200 font-semibold">{v.año}</p>
               </div>
             </div>
-          );
-        })}
+
+            <div className="pt-6 border-t border-zinc-900 flex justify-between items-center">
+              <div className="flex items-center gap-2 text-zinc-500 text-sm">
+                <Clock size={16} />
+                {/* Fallback inteligente por si v.ingreso viene vacío desde el estado de prueba */}
+                <span>{v.ingreso || 'Hoy'}</span> 
+              </div>
+              <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                <button
+                  onClick={() => openModal(v)}
+                  className="p-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-xl border border-zinc-800 transition-colors"
+                  title="Editar"
+                >
+                  <Edit2 size={15} />
+                </button>
+                <button
+                  onClick={() => setConfirmDeleteId(v.id)}
+                  className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-xl border border-red-500/20 transition-colors"
+                  title="Eliminar"
+                >
+                  <Trash2 size={15} />
+                </button>
+                <span className="text-blue-500 font-bold flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-1 text-sm">
+                  Ver detalle <MoreVertical size={14} />
+                </span>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

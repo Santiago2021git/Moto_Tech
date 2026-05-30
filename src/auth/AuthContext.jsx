@@ -6,9 +6,29 @@ import { setEmpresa } from "../config/empresa";
 
 const AuthContext = createContext(null);
 
+// Llave constante para el almacenamiento local
+const AUTH_KEY = "moto_app_session";
+
 export function AuthProvider({ children }) {
-  // session: { role: 'taller' | 'cliente', user: {...}, tallerActivo: {...} }
-  const [session, setSession] = useState(null);
+  // 1. Inicialización perezosa: Carga la sesión desde localStorage al montar la app
+  const [session, setSession] = useState(() => {
+    try {
+      const storedSession = localStorage.getItem(AUTH_KEY);
+      return storedSession ? JSON.parse(storedSession) : null;
+    } catch (error) {
+      console.error("Error parseando la sesión de localStorage:", error);
+      return null;
+    }
+  });
+
+  // 2. Efecto de sincronización: Guarda o elimina la sesión en localStorage cuando cambia
+  useEffect(() => {
+    if (session) {
+      localStorage.setItem(AUTH_KEY, JSON.stringify(session));
+    } else {
+      localStorage.removeItem(AUTH_KEY);
+    }
+  }, [session]);
 
   const loginTaller = useCallback((email, password) => {
     const taller = talleres.find(
@@ -31,8 +51,7 @@ export function AuthProvider({ children }) {
 
   const logout = useCallback(() => setSession(null), []);
 
-  // Mantiene `empresa` (export por defecto) sincronizado con el taller activo,
-  // para que componentes que importan `empresa` directamente vean los datos del taller.
+  // Mantiene `empresa` (export por defecto) sincronizado con el taller activo
   useEffect(() => {
     if (session?.tallerActivo) setEmpresa(session.tallerActivo);
   }, [session]);
@@ -70,7 +89,7 @@ export function AuthProvider({ children }) {
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+  if (!ctx) throw new Error("useAuth debe usarse dentro de un AuthProvider");
   return ctx;
 }
 
@@ -84,9 +103,11 @@ export function RequireAuth({ role, children }) {
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
+  
   if (role && currentRole !== role) {
-    // Redirige al espacio que sí le corresponde
+    // Redirige al espacio que sí le corresponde si intenta acceder a una ruta de otro rol
     return <Navigate to={currentRole === "cliente" ? "/cliente" : "/"} replace />;
   }
+  
   return children;
 }

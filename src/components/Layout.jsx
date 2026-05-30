@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+// 1. Importamos Outlet junto a useNavigate y useLocation
+import { useNavigate, useLocation, Outlet } from "react-router-dom"; 
 import { Footer } from "./Footer";
 import { useAuth } from "../auth/AuthContext";
 import { talleres } from "../data/talleres";
@@ -71,7 +72,8 @@ function TallerSelector({ tallerActivo, onChange, theme }) {
 }
 
 // --- LAYOUT PRINCIPAL ---
-export function Layout({ children }) {
+// 2. Ya no recibimos { children } como prop
+export function Layout() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -226,7 +228,10 @@ export function Layout({ children }) {
           </div>
         </header>
 
-        <main className="flex-1 p-4 md:p-6 overflow-y-auto w-full">{children}</main>
+        {/* 3. Cambiamos {children} por <Outlet /> */}
+        <main className="flex-1 p-4 md:p-6 overflow-y-auto w-full">
+          <Outlet /> 
+        </main>
 
         <Footer />
       </div>
