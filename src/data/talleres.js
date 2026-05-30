@@ -17,7 +17,7 @@ export const talleres = [
     email: "contacto@mototechpereira.co",
     direccion: "Av. 30 de Agosto #45-12, Pereira",
     horario: "Lun-Sáb 8:00 AM - 6:00 PM",
-    anioFundacion: 2023,
+    anioFundacion: 2026,
     nit: "900.123.456-7",
     // Credenciales demo
     usuario: "admin@mototech.co",

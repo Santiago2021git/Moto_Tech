@@ -4,10 +4,11 @@ import {
   TrendingUp, Download, FileText, CheckCircle2, Clock
 } from "lucide-react";
 import { usePageTitle } from '../hooks/usePageTitle';
+import jsPDF from "jspdf";
 
 export const Reportes = () => {
   usePageTitle("Reportes");
-  // Datos para la gráfica de barras (Últimos 6 meses)
+
   const ingresosMensuales = [
     { mes: "Sep", valor: 4.2, height: "h-[60%]" },
     { mes: "Oct", valor: 5.1, height: "h-[75%]" },
@@ -17,15 +18,20 @@ export const Reportes = () => {
     { mes: "Feb", valor: 6.8, height: "h-[100%]" },
   ];
 
-  // Datos para la leyenda del gráfico circular
   const distribucion = [
-    { label: "Mantenimiento", color: "bg-blue-500", porcentaje: "45%" },
-    { label: "Reparación", color: "bg-purple-500", porcentaje: "30%" },
-    { label: "Diagnóstico", color: "bg-green-500", porcentaje: "15%" },
-    { label: "Modificación", color: "bg-orange-500", porcentaje: "10%" },
+    { label: "Mantenimiento", color: "bg-blue-500", hex: "#3b82f6", porcentaje: "45%" },
+    { label: "Reparación",    color: "bg-purple-500", hex: "#a855f7", porcentaje: "30%" },
+    { label: "Diagnóstico",   color: "bg-green-500",  hex: "#22c55e", porcentaje: "15%" },
+    { label: "Modificación",  color: "bg-orange-500", hex: "#f97316", porcentaje: "10%" },
   ];
 
-  // Datos del historial para renderizar la lista responsive
+  const kpis = [
+    { label: "Ingresos del Mes",     valor: "$6.8M",  detalle: "+19.3% vs mes anterior" },
+    { label: "Servicios Realizados", valor: "135",    detalle: "Este mes" },
+    { label: "Clientes Atendidos",   valor: "78",     detalle: "Este mes" },
+    { label: "Días por Servicio",    valor: "2.8",    detalle: "Tiempo promedio" },
+  ];
+
   const historialDocumentos = [
     {
       titulo: "Reporte mensual de ingresos",
@@ -49,6 +55,186 @@ export const Reportes = () => {
     }
   ];
 
+  // ─── EXPORTAR PDF ────────────────────────────────────────────────────────────
+  const exportarPDF = () => {
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const ancho = doc.internal.pageSize.getWidth();
+    const margen = 18;
+    let y = 0;
+
+    // ── Encabezado con fondo oscuro
+    doc.setFillColor(9, 9, 11);
+    doc.rect(0, 0, ancho, 38, "F");
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(20);
+    doc.text("MotoTech — Reporte de Estadísticas", margen, 18);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(161, 161, 170);
+    const fechaHoy = new Date().toLocaleDateString("es-CO", { year: "numeric", month: "long", day: "numeric" });
+    doc.text(`Generado el ${fechaHoy}`, margen, 28);
+
+    y = 48;
+
+    // ── Sección: KPIs
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+    doc.setTextColor(30, 30, 30);
+    doc.text("Indicadores Clave (KPIs)", margen, y);
+    y += 6;
+
+    doc.setDrawColor(226, 232, 240);
+    doc.setLineWidth(0.3);
+    doc.line(margen, y, ancho - margen, y);
+    y += 6;
+
+    const colores = [
+      [37, 99, 235],   // blue
+      [124, 58, 237],  // purple
+      [5, 150, 105],   // emerald
+      [234, 88, 12],   // orange
+    ];
+
+    const kpiAncho = (ancho - margen * 2 - 9) / 2;
+
+    kpis.forEach((kpi, i) => {
+      const col = i % 2;
+      const fila = Math.floor(i / 2);
+      const x = margen + col * (kpiAncho + 9);
+      const yCard = y + fila * 28;
+      const [r, g, b] = colores[i];
+
+      doc.setFillColor(r, g, b);
+      doc.roundedRect(x, yCard, kpiAncho, 22, 3, 3, "F");
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.text(kpi.label, x + 5, yCard + 7);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(14);
+      doc.text(kpi.valor, x + 5, yCard + 15);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+      doc.setTextColor(220, 220, 220);
+      doc.text(kpi.detalle, x + 5, yCard + 20);
+    });
+
+    y += Math.ceil(kpis.length / 2) * 28 + 10;
+
+    // ── Sección: Gráfica de barras
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+    doc.setTextColor(30, 30, 30);
+    doc.text("Ingresos Mensuales (últimos 6 meses)", margen, y);
+    y += 6;
+
+    doc.setDrawColor(226, 232, 240);
+    doc.line(margen, y, ancho - margen, y);
+    y += 6;
+
+    const maxValor = Math.max(...ingresosMensuales.map(m => m.valor));
+    const alturaMaxBarra = 45;
+    const anchoBarra = 16;
+    const separacion = (ancho - margen * 2 - ingresosMensuales.length * anchoBarra) / (ingresosMensuales.length - 1);
+    const baseY = y + alturaMaxBarra + 6;
+
+    // Líneas guía
+    [0, 2, 4, 6, 8].forEach(val => {
+      const guiaY = baseY - (val / maxValor) * alturaMaxBarra;
+      doc.setDrawColor(230, 230, 235);
+      doc.setLineWidth(0.2);
+      doc.line(margen + 8, guiaY, ancho - margen, guiaY);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(6);
+      doc.setTextColor(150, 150, 160);
+      doc.text(`$${val}M`, margen, guiaY + 1.5);
+    });
+
+    ingresosMensuales.forEach((item, i) => {
+      const x = margen + 10 + i * (anchoBarra + separacion);
+      const alturaBarra = (item.valor / maxValor) * alturaMaxBarra;
+      const barraY = baseY - alturaBarra;
+
+      // Barra con gradiente simulado (dos capas)
+      doc.setFillColor(37, 99, 235);
+      doc.roundedRect(x, barraY, anchoBarra, alturaBarra, 2, 2, "F");
+      doc.setFillColor(96, 165, 250);
+      doc.roundedRect(x, barraY, anchoBarra, 4, 2, 2, "F");
+
+      // Valor encima
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7);
+      doc.setTextColor(30, 30, 30);
+      doc.text(`$${item.valor}M`, x + anchoBarra / 2, barraY - 2, { align: "center" });
+
+      // Mes abajo
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(100, 100, 110);
+      doc.text(item.mes, x + anchoBarra / 2, baseY + 6, { align: "center" });
+    });
+
+    y = baseY + 14;
+
+    // ── Footer
+    doc.setFillColor(9, 9, 11);
+    const pageHeight = doc.internal.pageSize.getHeight();
+    doc.rect(0, pageHeight - 14, ancho, 14, "F");
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(113, 113, 122);
+    doc.text("MotoTech © 2026 — Reporte generado automáticamente", margen, pageHeight - 5);
+    doc.text(`Página 1`, ancho - margen, pageHeight - 5, { align: "right" });
+
+    doc.save(`reporte_mototech_${new Date().toISOString().slice(0,10)}.pdf`);
+  };
+
+  // ─── EXPORTAR CSV ────────────────────────────────────────────────────────────
+  const exportarCSV = () => {
+    const sep = ",";
+    const nl = "\n";
+    const filas = [];
+
+    // KPIs
+    filas.push("=== INDICADORES CLAVE (KPIs) ===");
+    filas.push(["Indicador", "Valor", "Detalle"].join(sep));
+    kpis.forEach(k => filas.push([k.label, k.valor, k.detalle].join(sep)));
+    filas.push("");
+
+    // Ingresos mensuales
+    filas.push("=== INGRESOS MENSUALES ===");
+    filas.push(["Mes", "Ingresos (M COP)"].join(sep));
+    ingresosMensuales.forEach(m => filas.push([m.mes, m.valor].join(sep)));
+    filas.push("");
+
+    // Distribución de servicios
+    filas.push("=== DISTRIBUCION DE SERVICIOS POR TIPO ===");
+    filas.push(["Tipo de Servicio", "Porcentaje"].join(sep));
+    distribucion.forEach(d => filas.push([d.label, d.porcentaje].join(sep)));
+    filas.push("");
+
+    // Metadata
+    filas.push("=== INFORMACION DEL REPORTE ===");
+    filas.push(["Generado el", new Date().toLocaleString("es-CO")].join(sep));
+    filas.push(["Empresa", "MotoTech"].join(sep));
+
+    const csv = filas.join(nl);
+    const bom = "\uFEFF"; // UTF-8 BOM para compatibilidad con Excel
+    const blob = new Blob([bom + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `datos_mototech_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="animate-in space-y-8 pb-10">
       
@@ -59,15 +245,17 @@ export const Reportes = () => {
           <p className="text-zinc-500 mt-1 font-medium">Visualiza métricas clave del negocio y rendimiento general.</p>
         </div>
         <div className="flex gap-3">
-          <button onClick={() => window.print()} className="flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-white px-6 py-3 rounded-2xl font-bold transition-all shadow-sm active:scale-95">
+          <button
+            onClick={exportarPDF}
+            className="flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-white px-6 py-3 rounded-2xl font-bold transition-all shadow-sm active:scale-95"
+          >
             <Download size={18} />
             Exportar PDF
           </button>
-          <button onClick={() => {
-            const rows = [["Mes","Ingresos (M COP)"],...ingresosMensuales.map(r=>[r.mes,r.valor])];
-            const csv = rows.map(r=>r.join(",")).join("\n");
-            const a = document.createElement("a"); a.href = "data:text/csv;charset=utf-8,"+encodeURIComponent(csv); a.download = "reporte_ingresos.csv"; a.click();
-          }} className="flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-white px-6 py-3 rounded-2xl font-bold transition-all shadow-sm active:scale-95">
+          <button
+            onClick={exportarCSV}
+            className="flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-white px-6 py-3 rounded-2xl font-bold transition-all shadow-sm active:scale-95"
+          >
             <FileText size={18} />
             Exportar CSV
           </button>
@@ -76,7 +264,6 @@ export const Reportes = () => {
 
       {/* KPI CARDS GRID */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-        {/* Card 1: Ingresos */}
         <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-3xl p-6 shadow-lg shadow-blue-900/20 relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-6 opacity-20 transform translate-x-4 -translate-y-4 group-hover:scale-110 transition-transform">
             <DollarSign size={80} />
@@ -97,7 +284,6 @@ export const Reportes = () => {
           </div>
         </div>
 
-        {/* Card 2: Servicios */}
         <div className="bg-gradient-to-br from-purple-600 to-purple-800 rounded-3xl p-6 shadow-lg shadow-purple-900/20 relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-6 opacity-20 transform translate-x-4 -translate-y-4 group-hover:scale-110 transition-transform">
             <Wrench size={80} />
@@ -115,7 +301,6 @@ export const Reportes = () => {
           </div>
         </div>
 
-        {/* Card 3: Clientes */}
         <div className="bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-3xl p-6 shadow-lg shadow-emerald-900/20 relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-6 opacity-20 transform translate-x-4 -translate-y-4 group-hover:scale-110 transition-transform">
             <Users size={80} />
@@ -133,7 +318,6 @@ export const Reportes = () => {
           </div>
         </div>
 
-        {/* Card 4: Tiempos */}
         <div className="bg-gradient-to-br from-orange-500 to-orange-700 rounded-3xl p-6 shadow-lg shadow-orange-900/20 relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-6 opacity-20 transform translate-x-4 -translate-y-4 group-hover:scale-110 transition-transform">
             <Calendar size={80} />
@@ -152,18 +336,15 @@ export const Reportes = () => {
         </div>
       </div>
 
-      {/* SECCIÓN DE GRÁFICAS */}
+      {/* GRÁFICAS */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
         
-        {/* Gráfica de Barras: Ingresos Mensuales */}
         <div className="bg-zinc-950 border border-zinc-800 rounded-[2rem] p-6 md:p-8 shadow-xl flex flex-col min-h-[350px]">
           <div>
             <h3 className="text-xl font-bold text-white mb-1">Ingresos Mensuales</h3>
             <p className="text-sm text-zinc-500 font-medium mb-8">Últimos 6 meses</p>
           </div>
-          
           <div className="flex-1 flex items-end justify-between gap-2 mt-auto pt-10 relative">
-            {/* Líneas guía (Grid de fondo) */}
             <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-8">
               {[8, 6, 4, 2, 0].map((val, i) => (
                 <div key={i} className="flex items-center gap-4 w-full">
@@ -172,13 +353,10 @@ export const Reportes = () => {
                 </div>
               ))}
             </div>
-
-            {/* Barras */}
             <div className="relative z-10 flex items-end justify-between w-full pl-10 h-48 sm:h-64">
               {ingresosMensuales.map((item, i) => (
                 <div key={i} className="flex flex-col items-center gap-2 sm:gap-3 w-1/6">
                   <div className={`w-full max-w-[24px] sm:max-w-[40px] bg-gradient-to-t from-blue-700 to-blue-400 rounded-t-lg sm:rounded-t-xl hover:from-blue-600 hover:to-blue-300 transition-colors ${item.height} relative group`}>
-                    {/* Tooltip Hover */}
                     <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-zinc-800 text-white text-xs font-bold py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
                       ${item.valor}M
                     </div>
@@ -190,15 +368,12 @@ export const Reportes = () => {
           </div>
         </div>
 
-        {/* Gráfico Circular: Servicios por Tipo */}
         <div className="bg-zinc-950 border border-zinc-800 rounded-[2rem] p-6 md:p-8 shadow-xl flex flex-col">
           <div>
             <h3 className="text-xl font-bold text-white mb-1">Servicios por Tipo</h3>
             <p className="text-sm text-zinc-500 font-medium mb-8">Distribución de trabajos</p>
           </div>
-
           <div className="flex-1 flex flex-col sm:flex-row items-center justify-center gap-8 sm:gap-12 mt-auto py-4">
-            {/* Gráfico CSS (Conic Gradient) */}
             <div 
               className="w-40 h-40 sm:w-48 sm:h-48 rounded-full shadow-[0_0_40px_rgba(0,0,0,0.5)] border-[6px] border-zinc-950 shrink-0"
               style={{
@@ -210,8 +385,6 @@ export const Reportes = () => {
                 )`
               }}
             ></div>
-
-            {/* Leyenda */}
             <div className="flex flex-col gap-4 w-full sm:w-auto">
               {distribucion.map((item, i) => (
                 <div key={i} className="flex items-center justify-between sm:justify-start gap-4 p-3 sm:p-0 bg-zinc-900/50 sm:bg-transparent rounded-xl sm:rounded-none">
@@ -227,20 +400,16 @@ export const Reportes = () => {
         </div>
       </div>
 
-      {/* HISTORIAL REDISEÑADO (Responsive List/Grid en lugar de Tabla) */}
+      {/* HISTORIAL */}
       <div className="bg-zinc-950 border border-zinc-800 rounded-[2rem] p-6 lg:p-8 shadow-xl">
         <h3 className="text-xl font-bold text-white mb-6">Historial de Documentos Generados</h3>
-        
         <div className="flex flex-col gap-3">
-          {/* Cabecera visual (Solo visible en Desktop) */}
           <div className="hidden md:flex items-center px-4 pb-2 text-[10px] font-black text-zinc-500 uppercase tracking-widest border-b border-zinc-800/80 mb-2">
             <div className="w-2/5">Documento</div>
             <div className="w-1/5">Fecha</div>
             <div className="w-1/5">Estado</div>
             <div className="w-1/5 text-right">Acción</div>
           </div>
-
-          {/* Filas / Tarjetas */}
           {historialDocumentos.map((doc, index) => {
             const IconoEstado = doc.EstadoIcon;
             return (
@@ -248,7 +417,6 @@ export const Reportes = () => {
                 key={index} 
                 className="flex flex-col md:flex-row md:items-center bg-zinc-900/30 border border-zinc-800/50 hover:bg-zinc-900 hover:border-zinc-700 p-4 rounded-2xl transition-all gap-4 md:gap-0 group"
               >
-                {/* Info Principal */}
                 <div className="flex items-center gap-4 w-full md:w-2/5">
                   <div className="w-12 h-12 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-400 shrink-0 group-hover:text-white transition-colors">
                     <FileText size={20} />
@@ -262,25 +430,16 @@ export const Reportes = () => {
                     </div>
                   </div>
                 </div>
-
-                {/* Contenedor secundario para alinear en móvil y desktop */}
                 <div className="flex items-center justify-between w-full md:w-3/5 border-t border-zinc-800/50 md:border-none pt-4 md:pt-0">
-                  
-                  {/* Fecha */}
-                  <div className="w-auto md:w-1/3 text-zinc-400 text-sm font-medium">
-                    {doc.fecha}
-                  </div>
-
-                  {/* Estado */}
+                  <div className="w-auto md:w-1/3 text-zinc-400 text-sm font-medium">{doc.fecha}</div>
                   <div className="w-auto md:w-1/3 flex justify-start">
                     <span className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full border ${doc.estadoEstilo}`}>
                       <IconoEstado size={14} /> {doc.estado}
                     </span>
                   </div>
-
-                  {/* Acción */}
                   <div className="w-auto md:w-1/3 flex justify-end">
                     <button 
+                      onClick={doc.accionActiva ? exportarPDF : undefined}
                       className={`text-sm font-bold transition-colors ${
                         doc.accionActiva 
                           ? 'text-blue-500 hover:text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 px-4 py-2 rounded-xl' 
@@ -291,7 +450,6 @@ export const Reportes = () => {
                       Descargar
                     </button>
                   </div>
-                  
                 </div>
               </div>
             );
