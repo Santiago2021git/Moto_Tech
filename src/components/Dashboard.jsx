@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
@@ -9,54 +9,10 @@ import {
   User, Clock, ArrowRight, TrendingUp, Package, AlertTriangle
 } from "lucide-react";
 import { usePageTitle } from "../hooks/usePageTitle";
-
-// ── Datos de ejemplo ──────────────────────────────────────────────────────
+import { useApp } from "../context/AppContext";
+import { useAuth } from "../auth/AuthContext";
 
 const hoy = new Date();
-const semanaLabel = (offsetDias) => {
-  const d = new Date(hoy);
-  d.setDate(hoy.getDate() - offsetDias);
-  return d.toLocaleDateString("es-CO", { weekday: "short", day: "numeric" });
-};
-
-const serviciosSemana = [
-  { dia: semanaLabel(6), servicios: 3, ingresos: 420000 },
-  { dia: semanaLabel(5), servicios: 5, ingresos: 680000 },
-  { dia: semanaLabel(4), servicios: 2, ingresos: 310000 },
-  { dia: semanaLabel(3), servicios: 6, ingresos: 870000 },
-  { dia: semanaLabel(2), servicios: 4, ingresos: 550000 },
-  { dia: semanaLabel(1), servicios: 7, ingresos: 940000 },
-  { dia: semanaLabel(0), servicios: 3, ingresos: 420000 },
-];
-
-const ingresosMes = [
-  { mes: "Nov", valor: 4800000 },
-  { mes: "Dic", valor: 6100000 },
-  { mes: "Ene", valor: 5500000 },
-  { mes: "Feb", valor: 6800000 },
-  { mes: "Mar", valor: 7200000 },
-  { mes: "Abr", valor: 6500000 },
-  { mes: "May", valor: 7900000 },
-];
-
-const estadoVehiculos = [
-  { name: "Sin Atender", value: 1, color: "#f97316" },
-  { name: "En Proceso",  value: 1, color: "#3b82f6" },
-  { name: "Finalizados", value: 1, color: "#22c55e" },
-];
-
-const tiposServicio = [
-  { name: "Cambio de Aceite",    value: 35, color: "#06b6d4" },
-  { name: "Mantenimiento Gral.", value: 25, color: "#8b5cf6" },
-  { name: "Ajuste de Frenos",    value: 20, color: "#f97316" },
-  { name: "Motor / Sincro.",     value: 12, color: "#22c55e" },
-  { name: "Otros",               value: 8,  color: "#6b7280" },
-];
-
-const stockBajo = [
-  { nombre: "Filtro de Aceite K&N", stock: 5, min: 8 },
-  { nombre: "Cadena DID 520",       stock: 2, min: 5 },
-];
 
 const CustomTooltip = ({ active, payload, label, formatter }) => {
   if (!active || !payload?.length) return null;
@@ -81,14 +37,106 @@ export const Dashboard = () => {
   usePageTitle("Dashboard");
   const [rangoIngr, setRangoIngr] = useState("mes");
 
+  const { vehiculos, inventario, citas } = useApp();
+  const { tallerActivo } = useAuth();
+  const tid = tallerActivo?.id;
+
+  // Filtrar por taller
+  const misVehiculos = useMemo(() => vehiculos.filter(v => v.tallerId === tid), [vehiculos, tid]);
+  const misInventario = useMemo(() => inventario.filter(i => i.tallerId === tid), [inventario, tid]);
+  const misCitas = useMemo(() => citas.filter(c => c.tallerId === tid), [citas, tid]);
+
+  const semanaLabel = (offsetDias) => {
+    const d = new Date(hoy);
+    d.setDate(hoy.getDate() - offsetDias);
+    return d.toLocaleDateString("es-CO", { weekday: "short", day: "numeric" });
+  };
+
+  // Servicios por día (últimos 7 días basado en fechas de ingreso)
+  const serviciosSemana = useMemo(() => {
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(hoy);
+      d.setDate(hoy.getDate() - (6 - i));
+      const key = d.toISOString().slice(0, 10);
+      const vehiculosDelDia = misVehiculos.filter(v => v.ingreso === key);
+      return {
+        dia: semanaLabel(6 - i),
+        servicios: vehiculosDelDia.length,
+        ingresos: vehiculosDelDia.reduce((acc, v) => acc + (Number(v.costoEstimado) || 0), 0),
+      };
+    });
+  }, [misVehiculos]);
+
+  // Ingresos últimos 7 meses
+  const ingresosMes = useMemo(() => {
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(hoy.getFullYear(), hoy.getMonth() - (6 - i), 1);
+      const mesStr = d.toLocaleDateString("es-CO", { month: "short" });
+      const anio = d.getFullYear();
+      const mes = d.getMonth();
+      const total = misVehiculos
+        .filter(v => {
+          if (!v.ingreso) return false;
+          const vi = new Date(v.ingreso);
+          return vi.getFullYear() === anio && vi.getMonth() === mes;
+        })
+        .reduce((acc, v) => acc + (Number(v.costoEstimado) || 0), 0);
+      return { mes: mesStr, valor: total };
+    });
+  }, [misVehiculos]);
+
+  // Estado de vehículos
+  const estadoVehiculos = useMemo(() => [
+    { name: "Sin Atender", value: misVehiculos.filter(v => v.estado === "Sin Atender").length, color: "#f97316" },
+    { name: "En Proceso",  value: misVehiculos.filter(v => v.estado === "En Proceso").length,  color: "#3b82f6" },
+    { name: "Finalizados", value: misVehiculos.filter(v => v.estado === "Finalizada").length,  color: "#22c55e" },
+  ], [misVehiculos]);
+
+  // Tipos de servicio por frecuencia
+  const tiposServicio = useMemo(() => {
+    const colores = ["#06b6d4", "#8b5cf6", "#f97316", "#22c55e", "#6b7280"];
+    const conteo = {};
+    misVehiculos.forEach(v => {
+      (v.serviciosCotizados || []).forEach(s => {
+        const nombre = s.nombre || s;
+        conteo[nombre] = (conteo[nombre] || 0) + 1;
+      });
+    });
+    const total = Object.values(conteo).reduce((a, b) => a + b, 0) || 1;
+    return Object.entries(conteo)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([name, cnt], i) => ({
+        name,
+        value: Math.round((cnt / total) * 100),
+        color: colores[i] || "#6b7280",
+      }));
+  }, [misVehiculos]);
+
+  // Stock bajo
+  const stockBajo = useMemo(
+    () => misInventario.filter(i => Number(i.stock) < Number(i.minStock)),
+    [misInventario]
+  );
+
+  // Próximas citas (hoy en adelante, máx 6)
+  const proximasCitas = useMemo(() => {
+    const hoyStr = hoy.toISOString().slice(0, 10);
+    return misCitas
+      .filter(c => c.fecha >= hoyStr)
+      .sort((a, b) => a.fecha.localeCompare(b.fecha) || (a.hora || "").localeCompare(b.hora || ""))
+      .slice(0, 6);
+  }, [misCitas]);
+
   const totalServiciosSemana = serviciosSemana.reduce((s, d) => s + d.servicios, 0);
-  const totalIngresosMes = ingresosMes[ingresosMes.length - 1].valor;
+  const totalIngresosMes = ingresosMes[ingresosMes.length - 1]?.valor || 0;
+  const citasHoy = misCitas.filter(c => c.fecha === hoy.toISOString().slice(0, 10)).length;
 
   const stats = [
-    { label: "Sin Atender",  value: "1", sub: "Vehículos en espera",  icon: AlertCircle,  color: "text-orange-400", bg: "bg-orange-500/10", route: "/vehiculos" },
-    { label: "En Proceso",   value: "1", sub: "Trabajos en curso",    icon: Wrench,       color: "text-blue-400",   bg: "bg-blue-500/10",   route: "/vehiculos" },
-    { label: "Finalizados",  value: "1", sub: "Esta semana",          icon: CheckCircle2, color: "text-green-400",  bg: "bg-green-500/10",  route: "/vehiculos" },
-    { label: "Citas Hoy",    value: "0", sub: "Programadas",          icon: Calendar,     color: "text-purple-400", bg: "bg-purple-500/10", route: "/agenda" },
+    { label: "Sin Atender",  value: String(estadoVehiculos[0].value), sub: "Vehículos en espera",  icon: AlertCircle,  color: "text-orange-400", bg: "bg-orange-500/10", route: "/vehiculos" },
+    { label: "En Proceso",   value: String(estadoVehiculos[1].value), sub: "Trabajos en curso",    icon: Wrench,       color: "text-blue-400",   bg: "bg-blue-500/10",   route: "/vehiculos" },
+    { label: "Finalizados",  value: String(estadoVehiculos[2].value), sub: "Esta semana",          icon: CheckCircle2, color: "text-green-400",  bg: "bg-green-500/10",  route: "/vehiculos" },
+    { label: "Citas Hoy",    value: String(citasHoy), sub: "Programadas",          icon: Calendar,     color: "text-purple-400", bg: "bg-purple-500/10", route: "/agenda" },
     { label: "Ingresos Mes", value: fmtCOP(totalIngresosMes), sub: hoy.toLocaleDateString("es-CO", { month: "long", year: "numeric" }), icon: TrendingUp, color: "text-cyan-400", bg: "bg-cyan-500/10", route: "/reportes" },
     { label: "Servicios",    value: String(totalServiciosSemana), sub: "Esta semana", icon: Wrench, color: "text-indigo-400", bg: "bg-indigo-500/10", route: "/vehiculos" },
   ];
@@ -272,12 +320,11 @@ export const Dashboard = () => {
           <h3 className="text-xl font-bold text-white tracking-tight">Próximas Citas</h3>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[
-            { name: "Ana Silva",     plate: "GHI789", task: "Revisión inicial",     fecha: "Hoy",    time: "09:00", tipo: "revision" },
-            { name: "Pedro Sánchez", plate: "JKL012", task: "Reparación de escape", fecha: "Mañana", time: "14:00", tipo: "reparacion" },
-          ].map((cita, i) => (
+          {proximasCitas.length === 0 ? (
+            <p className="text-zinc-500 text-sm">No hay citas próximas.</p>
+          ) : proximasCitas.map((cita, i) => (
             <div
-              key={i}
+              key={cita.id || i}
               onClick={() => navigate("/agenda")}
               className="bg-zinc-950 border border-zinc-800 rounded-[2rem] p-5 flex items-center justify-between hover:bg-zinc-900 transition-all border-l-4 border-l-purple-600 cursor-pointer active:scale-[0.98]"
             >
@@ -286,17 +333,17 @@ export const Dashboard = () => {
                   <User size={20} strokeWidth={2.5} />
                 </div>
                 <div>
-                  <h4 className="text-base font-black text-white">{cita.name}</h4>
-                  <p className="text-xs text-zinc-500 font-mono">{cita.plate}</p>
-                  <span className={`text-xs font-bold px-2 py-0.5 rounded-md mt-1 inline-block ${cita.tipo === "revision" ? "bg-blue-500/10 text-blue-400" : "bg-orange-500/10 text-orange-400"}`}>
-                    {cita.task}
+                  <h4 className="text-base font-black text-white">{cita.cliente || cita.nombre || "Cliente"}</h4>
+                  <p className="text-xs text-zinc-500 font-mono">{cita.placa || cita.vehiculo || "—"}</p>
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-md mt-1 inline-block bg-purple-500/10 text-purple-300">
+                    {cita.servicio || cita.tipo || "Servicio"}
                   </span>
                 </div>
               </div>
               <div className="text-right flex-shrink-0">
                 <p className="text-lg font-black text-purple-400">{cita.fecha}</p>
                 <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest flex items-center gap-1 justify-end">
-                  <Clock size={11} />{cita.time}
+                  <Clock size={11} />{cita.hora}
                 </p>
               </div>
             </div>

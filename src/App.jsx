@@ -1,6 +1,7 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
+import { AppProvider } from "./context/AppContext";
 import { AuthProvider, RequireAuth, useAuth } from "./auth/AuthContext";
 
 // Pantallas de autenticación
@@ -32,11 +33,18 @@ import { ClienteDashboard } from "./components/Cliente/ClienteDashboard";
 import { ClienteDetalleMoto } from "./components/Cliente/ClienteDetalleMoto";
 import { MiTaller } from "./components/Cliente/MiTaller";
 
+// Super admin (MotoTech)
+import { SuperLayout } from "./components/Super/SuperLayout";
+import { SuperDashboard } from "./components/Super/SuperDashboard";
+import { SuperTalleres } from "./components/Super/SuperTalleres";
+import { SuperClientes } from "./components/Super/SuperClientes";
+
 // Si el usuario ya está autenticado y llega a /login, lo enviamos a su área
 function RedirectIfAuth({ children }) {
   const { isAuthenticated, role } = useAuth();
   if (isAuthenticated) {
-    return <Navigate to={role === "cliente" ? "/cliente" : "/"} replace />;
+    const to = role === "cliente" ? "/cliente" : role === "super" ? "/super" : "/";
+    return <Navigate to={to} replace />;
   }
   return children;
 }
@@ -75,11 +83,24 @@ const ClienteRoutes = () => (
   </ClienteLayout>
 );
 
+// Rutas del super-admin
+const SuperRoutes = () => (
+  <SuperLayout>
+    <Routes>
+      <Route path="/" element={<SuperDashboard />} />
+      <Route path="/talleres" element={<SuperTalleres />} />
+      <Route path="/clientes" element={<SuperClientes />} />
+      <Route path="*" element={<Navigate to="/super" replace />} />
+    </Routes>
+  </SuperLayout>
+);
+
 function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <Routes>
+      <AppProvider>
+        <AuthProvider>
+          <Routes>
           {/* Auth */}
           <Route
             path="/login"
@@ -118,6 +139,16 @@ function App() {
             }
           />
 
+          {/* Área del super-admin */}
+          <Route
+            path="/super/*"
+            element={
+              <RequireAuth role="super">
+                <SuperRoutes />
+              </RequireAuth>
+            }
+          />
+
           {/* Área del taller (catch-all autenticada) */}
           <Route
             path="/*"
@@ -127,8 +158,9 @@ function App() {
               </RequireAuth>
             }
           />
-        </Routes>
-      </AuthProvider>
+          </Routes>
+        </AuthProvider>
+      </AppProvider>
     </BrowserRouter>
   );
 }

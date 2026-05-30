@@ -1,18 +1,16 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Plus, CalendarDays, CheckCircle2, Clock,
   ChevronRight, Calendar as CalendarIcon, X, Check,
   AlertCircle, Trash2, Wrench, ClipboardList, ArrowRight
 } from "lucide-react";
 import { usePageTitle } from "../hooks/usePageTitle";
+import { useApp } from "../context/AppContext";
+import { useAuth } from "../auth/AuthContext";
 
 // ── Tipos de cita ─────────────────────────────────────────────────────────
 const TIPOS_CITA = ["Revisión Inicial", "Reparación / Servicio"];
-const SERVICIOS_AGENDA = [
-  "Cambio de Aceite", "Mantenimiento General", "Ajuste de Frenos",
-  "Sincronización de Motor", "Revisión Eléctrica", "Cambio de Llantas",
-  "Reparación de Escape", "Diagnóstico General"
-];
+const SERVICIOS_FALLBACK = ["Servicio General"];
 
 // ── Genera los próximos 5 días hábiles desde hoy ──────────────────────────
 function generarDiasHabiles(cantidad = 5) {
@@ -53,10 +51,28 @@ const TIEMPOS_ESTIMADOS = ["1 hora", "2 horas", "Medio día", "1 día", "2 días
 export const Agenda = () => {
   usePageTitle("Agenda");
 
-  const [dias, setDias] = useState(generarDiasHabiles(5));
-  const [selectedDay, setSelectedDay] = useState(generarDiasHabiles(5)[0].id);
+  const { citas, agregarCita, actualizarCita, eliminarCita, servicios } = useApp();
+  const { tallerActivo } = useAuth();
+  const tallerId = tallerActivo?.id;
+
+  const serviciosTaller = useMemo(
+    () => servicios.filter(s => s.tallerId === tallerId).map(s => s.titulo),
+    [servicios, tallerId]
+  );
+  const SERVICIOS_AGENDA = serviciosTaller.length > 0 ? serviciosTaller : SERVICIOS_FALLBACK;
+
+  const diasBase = useMemo(() => generarDiasHabiles(5), []);
+  const citasTaller = citas.filter(c => !c.tallerId || c.tallerId === tallerId);
+
+  // Indexa citas por día
+  const dias = diasBase.map(d => ({
+    ...d,
+    citas: citasTaller.filter(c => c.fecha === d.id),
+  }));
+
+  const [selectedDay, setSelectedDay] = useState(diasBase[0].id);
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ ...initialFormA, dia: generarDiasHabiles(5)[0].id });
+  const [form, setForm] = useState({ ...initialFormA, dia: diasBase[0].id });
   const [errors, setErrors] = useState({});
   const [toast, setToast] = useState(null);
   const [confirmDeleteIndex, setConfirmDeleteIndex] = useState(null);
@@ -64,7 +80,7 @@ export const Agenda = () => {
   // Modal post-revisión: agendar 2da cita
   const [showPostModal, setShowPostModal] = useState(false);
   const [postCitaRef, setPostCitaRef] = useState(null); // { dayId, citaIndex }
-  const [formPost, setFormPost] = useState({ ...initialFormPost, dia: generarDiasHabiles(5)[0].id });
+  const [formPost, setFormPost] = useState({ ...initialFormPost, dia: diasBase[0].id });
   const [errorsPost, setErrorsPost] = useState({});
 
   const citasDelDia = dias.find(d => d.id === selectedDay)?.citas || [];
@@ -92,7 +108,7 @@ export const Agenda = () => {
 
   // ── Abrir/Cerrar modales ─────────────────────────────────────────────────
   const openModal = () => {
-    setForm({ ...initialFormA, dia: selectedDay });
+    setForm({ ...initialFormA, dia: selectedDay, servicio: SERVICIOS_AGENDA[0] });
     setErrors({});
     setShowModal(true);
   };
@@ -103,17 +119,19 @@ export const Agenda = () => {
   const handleSubmit = () => {
     const e = validate();
     if (Object.keys(e).length > 0) { setErrors(e); return; }
-    const nuevaCita = {
+    agregarCita({
+      tallerId,
+      fecha: form.dia,
       cliente: form.cliente,
       vehiculo: form.vehiculo,
+      placa: form.vehiculo,
       tipo: form.tipo,
       servicio: form.servicio,
       hora: form.hora,
       notas: form.notas,
       confirmada: false,
-      estado: "Pendiente", // Pendiente | En Revisión | Diagnosticada | Segunda Cita Agendada | Completada
-    };
-    setDias(prev => prev.map(d => d.id === form.dia ? { ...d, citas: [...d.citas, nuevaCita] } : d));
+      estado: "Pendiente",
+    });
     if (form.dia !== selectedDay) setSelectedDay(form.dia);
     showToast("Cita agendada correctamente.");
     closeModal();
@@ -121,46 +139,37 @@ export const Agenda = () => {
 
   // ── Eliminar cita ─────────────────────────────────────────────────────────
   const handleDelete = (citaIndex) => {
-    setDias(prev => prev.map(d => d.id === selectedDay ? { ...d, citas: d.citas.filter((_, i) => i !== citaIndex) } : d));
+    const cita = citasDelDia[citaIndex];
+    if (cita) eliminarCita(cita.id);
     setConfirmDeleteIndex(null);
     showToast("Cita eliminada.");
   };
 
   // ── Confirmar / marcar estado ─────────────────────────────────────────────
   const toggleConfirmada = (citaIndex) => {
-    setDias(prev => prev.map(d =>
-      d.id === selectedDay
-        ? { ...d, citas: d.citas.map((c, i) => i === citaIndex ? { ...c, confirmada: !c.confirmada } : c) }
-        : d
-    ));
+    const cita = citasDelDia[citaIndex];
+    if (cita) actualizarCita(cita.id, { confirmada: !cita.confirmada });
   };
 
   // ── Avanzar estado de revisión ────────────────────────────────────────────
   const avanzarEstado = (citaIndex) => {
-    setDias(prev => prev.map(d => {
-      if (d.id !== selectedDay) return d;
-      return {
-        ...d,
-        citas: d.citas.map((c, i) => {
-          if (i !== citaIndex) return c;
-          const mapaEstado = {
-            "Pendiente": "En Revisión",
-            "En Revisión": "Diagnosticada",
-            "Diagnosticada": "Diagnosticada",
-            "Segunda Cita Agendada": "Completada",
-            "Completada": "Completada",
-          };
-          return { ...c, estado: mapaEstado[c.estado] || c.estado };
-        }),
-      };
-    }));
+    const cita = citasDelDia[citaIndex];
+    if (!cita) return;
+    const mapaEstado = {
+      "Pendiente": "En Revisión",
+      "En Revisión": "Diagnosticada",
+      "Diagnosticada": "Diagnosticada",
+      "Segunda Cita Agendada": "Completada",
+      "Completada": "Completada",
+    };
+    actualizarCita(cita.id, { estado: mapaEstado[cita.estado] || cita.estado });
   };
 
   // ── Modal 2da cita (post-revisión) ────────────────────────────────────────
   const openPostModal = (citaIndex) => {
     const cita = citasDelDia[citaIndex];
     setPostCitaRef({ dayId: selectedDay, citaIndex });
-    setFormPost({ ...initialFormPost, dia: selectedDay, cliente: cita.cliente, vehiculo: cita.vehiculo });
+    setFormPost({ ...initialFormPost, dia: selectedDay, cliente: cita.cliente, vehiculo: cita.vehiculo, servicio: SERVICIOS_AGENDA[0] });
     setErrorsPost({});
     setShowPostModal(true);
   };
@@ -170,9 +179,13 @@ export const Agenda = () => {
   const handleSubmitPost = () => {
     const e = validatePost();
     if (Object.keys(e).length > 0) { setErrorsPost(e); return; }
-    const nuevaCita = {
+    // Agrega nueva cita de seguimiento
+    agregarCita({
+      tallerId,
+      fecha: formPost.dia,
       cliente: formPost.cliente,
       vehiculo: formPost.vehiculo,
+      placa: formPost.vehiculo,
       tipo: "Reparación / Servicio",
       servicio: formPost.servicio,
       hora: formPost.hora,
@@ -180,21 +193,12 @@ export const Agenda = () => {
       confirmada: false,
       estado: "Pendiente",
       esSeguimiento: true,
-    };
-    // Marcar cita original como "Segunda Cita Agendada"
+    });
+    // Marca la cita original como "Segunda Cita Agendada"
     if (postCitaRef) {
-      setDias(prev => prev.map(d => {
-        if (d.id !== postCitaRef.dayId) return d;
-        return {
-          ...d,
-          citas: d.citas.map((c, i) =>
-            i === postCitaRef.citaIndex ? { ...c, estado: "Segunda Cita Agendada" } : c
-          ),
-        };
-      }));
+      const citaOriginal = (citasTaller.find(c => c.fecha === postCitaRef.dayId) && dias.find(d => d.id === postCitaRef.dayId)?.citas[postCitaRef.citaIndex]);
+      if (citaOriginal) actualizarCita(citaOriginal.id, { estado: "Segunda Cita Agendada" });
     }
-    // Agregar nueva cita al día seleccionado
-    setDias(prev => prev.map(d => d.id === formPost.dia ? { ...d, citas: [...d.citas, nuevaCita] } : d));
     if (formPost.dia !== selectedDay) setSelectedDay(formPost.dia);
     showToast("Cita de reparación agendada correctamente.");
     closePostModal();

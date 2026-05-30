@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Footer } from "./Footer";
 import { useAuth } from "../auth/AuthContext";
-import { talleres } from "../data/talleres";
+import { useApp } from "../context/AppContext";
 import {
   Menu,
   X,
@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 
 // --- Selector de taller (modo demo de marca blanca) ---
-function TallerSelector({ tallerActivo, onChange, theme }) {
+function TallerSelector({ tallerActivo, onChange, theme, talleres }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="relative">
@@ -76,6 +76,9 @@ export function Layout({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { tallerActivo, theme, cambiarTallerActivo, logout } = useAuth();
+  const { talleres, notificaciones } = useApp();
+  const talleresDemo = talleres.filter((t) => !t.isSuper);
+  const noLeidas = notificaciones.filter((n) => n.tallerId === tallerActivo?.id && !n.leida).length;
 
   const menuItems = [
     { name: "Dashboard", path: "/", icon: <LayoutDashboard size={18} /> },
@@ -183,8 +186,8 @@ export function Layout({ children }) {
               <Menu size={24} />
             </button>
             <img src="/Logo_MotoTech.jpeg" alt="Logo MotoTech" className="w-10 h-10 rounded-full" />
-            <h2 className={`text-lg font-semibold ${theme.primaryText} hidden sm:block`}>
-              {tallerActivo?.nombre}
+            <h2 className="text-lg font-semibold text-white hidden sm:block">
+              MotoTech
             </h2>
           </div>
 
@@ -193,6 +196,7 @@ export function Layout({ children }) {
               tallerActivo={tallerActivo}
               onChange={cambiarTallerActivo}
               theme={theme}
+              talleres={talleresDemo}
             />
             <button
               onClick={() => navigate("/busqueda")}
@@ -207,7 +211,9 @@ export function Layout({ children }) {
               title="Notificaciones"
             >
               <Bell size={20} />
-              <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 border-2 border-gray-900 rounded-full" />
+              {noLeidas > 0 && (
+                <span className="absolute top-0.5 right-0.5 min-w-[16px] h-4 px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border border-gray-900">{noLeidas}</span>
+              )}
             </button>
             <button
               onClick={() => navigate("/perfil")}

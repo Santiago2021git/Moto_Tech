@@ -4,6 +4,8 @@ import {
   ChevronDown, X, Check, AlertCircle, Trash2
 } from "lucide-react";
 import { usePageTitle } from '../hooks/usePageTitle';
+import { useApp } from '../context/AppContext';
+import { useAuth } from '../auth/AuthContext';
 
 const ROLES = ["Mecánico Senior", "Mecánico Junior", "Especialista Eléctrico", "Auxiliar de Taller", "Administrativo"];
 const ESTADOS_EMP = ["Disponible", "Ocupado", "Inactivo"];
@@ -12,12 +14,13 @@ const initialFormE = { nombre: "", rol: "Mecánico Senior", especialidades: "", 
 
 export const Empleados = () => {
   usePageTitle("Empleados");
-  const [empleados, setEmpleados] = useState([
-    { nombre: "Roberto Gómez", iniciales: "RG", rol: "Mecánico Senior", estado: "Ocupado", rating: 4.8, especialidades: ["Motor", "Transmisión", "Suspensión"], servicios: 342, eficiencia: 95, ingreso: "marzo de 2020", avatarColor: "from-blue-600 to-indigo-600" },
-    { nombre: "Laura Sánchez", iniciales: "LS", rol: "Mecánica Junior", estado: "Disponible", rating: 4.6, especialidades: ["Mantenimiento", "Frenos", "Electrico"], servicios: 156, eficiencia: 88, ingreso: "junio de 2022", avatarColor: "from-purple-600 to-pink-600" },
-    { nombre: "Carlos Ramírez", iniciales: "CR", rol: "Especialista Eléctrico", estado: "Inactivo", rating: 4.9, especialidades: ["Diagnóstico", "Inyección", "Sensores"], servicios: 512, eficiencia: 98, ingreso: "enero de 2019", avatarColor: "from-emerald-500 to-teal-600" },
-    { nombre: "Andrés Torres", iniciales: "AT", rol: "Auxiliar de Taller", estado: "Disponible", rating: 4.2, especialidades: ["Llantas", "Fluidos", "Lavado"], servicios: 89, eficiencia: 75, ingreso: "noviembre de 2023", avatarColor: "from-orange-500 to-red-600" },
-  ]);
+  const {
+    empleados: todos, agregarEmpleado, actualizarEmpleado, eliminarEmpleado,
+    vehiculos: vehiculosTodos, asignarVehiculoAEmpleado,
+  } = useApp();
+  const { tallerActivo } = useAuth();
+  const empleados = todos.filter(e => !e.tallerId || e.tallerId === tallerActivo?.id);
+  const vehiculosMios = vehiculosTodos.filter(v => v.tallerId === tallerActivo?.id);
 
   const [busqueda, setBusqueda] = useState("");
   const [filtroRol, setFiltroRol] = useState("Todos los roles");
@@ -29,6 +32,7 @@ export const Empleados = () => {
   const [perfil, setPerfil] = useState(null);
   const [confirmDeleteIndex, setConfirmDeleteIndex] = useState(null);
   const [asignarIndex, setAsignarIndex] = useState(null);
+  const [asignarVehiculoId, setAsignarVehiculoId] = useState("");
 
   const empleadosFiltrados = empleados.filter(e => {
     const t = busqueda.toLowerCase();
@@ -49,7 +53,7 @@ export const Empleados = () => {
   const openModal = (index = null) => {
     if (index !== null) {
       const emp = empleados[index];
-      setForm({ nombre: emp.nombre, rol: emp.rol, especialidades: emp.especialidades.join(", "), estado: emp.estado });
+      setForm({ nombre: emp.nombre, rol: emp.rol, especialidades: (emp.especialidades || []).join(", "), estado: emp.estado });
       setEditIndex(index);
     } else {
       setForm(initialFormE);
@@ -67,17 +71,25 @@ export const Empleados = () => {
     const espArr = form.especialidades.split(",").map(s => s.trim()).filter(Boolean);
     const inis = form.nombre.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
     if (editIndex !== null) {
-      setEmpleados(prev => prev.map((emp, i) => i === editIndex ? { ...emp, nombre: form.nombre, rol: form.rol, especialidades: espArr, estado: form.estado, iniciales: inis } : emp));
+      const emp = empleados[editIndex];
+      actualizarEmpleado(emp.id, { nombre: form.nombre, rol: form.rol, especialidades: espArr, estado: form.estado, iniciales: inis });
       showToast("Empleado actualizado correctamente.");
     } else {
-      setEmpleados(prev => [...prev, { nombre: form.nombre, iniciales: inis, rol: form.rol, estado: form.estado, rating: 4.5, especialidades: espArr, servicios: 0, eficiencia: 80, ingreso: new Date().toLocaleDateString("es-CO", { month: "long", year: "numeric" }), avatarColor: COLORES_EMP[prev.length % COLORES_EMP.length] }]);
+      agregarEmpleado({
+        tallerId: tallerActivo?.id,
+        nombre: form.nombre, iniciales: inis, rol: form.rol, estado: form.estado,
+        rating: 0, especialidades: espArr, servicios: 0, eficiencia: 0,
+        ingreso: new Date().toLocaleDateString("es-CO", { month: "long", year: "numeric" }),
+        avatarColor: COLORES_EMP[empleados.length % COLORES_EMP.length],
+      });
       showToast("Empleado agregado correctamente.");
     }
     closeModal();
   };
 
   const handleDelete = (index) => {
-    setEmpleados(prev => prev.filter((_, i) => i !== index));
+    const emp = empleados[index];
+    if (emp) eliminarEmpleado(emp.id);
     setConfirmDeleteIndex(null);
     showToast("Empleado eliminado.");
   };
@@ -190,15 +202,53 @@ export const Empleados = () => {
 
       {asignarIndex !== null && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-8 w-full max-w-sm shadow-2xl text-center">
-            <div className="w-16 h-16 bg-purple-500/10 rounded-2xl flex items-center justify-center mx-auto mb-5"><Award size={32} className="text-purple-400" /></div>
-            <h3 className="text-xl font-black text-white mb-2">Asignar Servicio</h3>
-            <p className="text-zinc-400 text-sm mb-3">Asignar próximo servicio disponible a:</p>
-            <p className="text-white font-black text-lg mb-7">{empleados[asignarIndex]?.nombre}</p>
-            <div className="flex gap-3">
-              <button onClick={() => setAsignarIndex(null)} className="flex-1 py-2.5 bg-zinc-900 border border-zinc-800 text-zinc-300 rounded-xl font-bold text-sm">Cancelar</button>
-              <button onClick={() => { setAsignarIndex(null); showToast(`Servicio asignado a ${empleados[asignarIndex]?.nombre}`); }} className="flex-1 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-bold text-sm transition-all">Asignar</button>
+          <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-8 w-full max-w-md shadow-2xl">
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-purple-500/10 rounded-2xl flex items-center justify-center"><Award size={22} className="text-purple-400" /></div>
+                <div>
+                  <h3 className="text-lg font-black text-white">Asignar vehículo</h3>
+                  <p className="text-xs text-zinc-500">A {empleados[asignarIndex]?.nombre}</p>
+                </div>
+              </div>
+              <button onClick={() => { setAsignarIndex(null); setAsignarVehiculoId(""); }} className="text-zinc-500 hover:text-white"><X size={20}/></button>
             </div>
+            {(() => {
+              const pendientes = vehiculosMios.filter(v => v.estado !== "Finalizada" && (!v.tecnico || v.tecnico === "Por asignar"));
+              if (pendientes.length === 0) {
+                return (
+                  <div className="text-center py-8">
+                    <p className="text-zinc-400 mb-1 font-semibold">No hay servicios pendientes</p>
+                    <p className="text-zinc-600 text-sm">Todos los vehículos en taller ya tienen técnico asignado.</p>
+                  </div>
+                );
+              }
+              return (
+                <>
+                  <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">Vehículo a asignar</label>
+                  <div className="relative mb-5">
+                    <select value={asignarVehiculoId} onChange={(e) => setAsignarVehiculoId(e.target.value)}
+                      className="appearance-none w-full bg-zinc-900 border border-zinc-800 rounded-xl py-2.5 pl-4 pr-10 text-white outline-none cursor-pointer">
+                      <option value="">-- Selecciona un vehículo --</option>
+                      {pendientes.map(v => (
+                        <option key={v.id} value={v.id}>{v.marca} {v.modelo} • {v.placa} • {v.cliente}</option>
+                      ))}
+                    </select>
+                    <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" />
+                  </div>
+                  <div className="flex gap-3">
+                    <button onClick={() => { setAsignarIndex(null); setAsignarVehiculoId(""); }} className="flex-1 py-2.5 bg-zinc-900 border border-zinc-800 text-zinc-300 rounded-xl font-bold text-sm">Cancelar</button>
+                    <button disabled={!asignarVehiculoId} onClick={() => {
+                      const emp = empleados[asignarIndex];
+                      asignarVehiculoAEmpleado(asignarVehiculoId, emp.nombre);
+                      actualizarEmpleado(emp.id, { estado: "Ocupado", servicios: (emp.servicios || 0) + 1 });
+                      showToast(`Vehículo asignado a ${emp.nombre}`);
+                      setAsignarIndex(null); setAsignarVehiculoId("");
+                    }} className="flex-1 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 disabled:opacity-40 text-white rounded-xl font-bold text-sm transition-all">Asignar</button>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
       )}

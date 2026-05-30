@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Wrench, ArrowLeft, Check, Upload } from "lucide-react";
+import { useApp } from "../../context/AppContext";
 
 const initial = {
   nombre: "",
@@ -19,8 +20,10 @@ const initial = {
 
 export const RegistroTaller = () => {
   const navigate = useNavigate();
+  const { registrarTaller, talleres } = useApp();
   const [form, setForm] = useState(initial);
   const [ok, setOk] = useState(false);
+  const [error, setError] = useState("");
 
   const set = (k) => (e) =>
     setForm((f) => ({ ...f, [k]: e.target.type === "checkbox" ? e.target.checked : e.target.value }));
@@ -35,10 +38,29 @@ export const RegistroTaller = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    setError("");
     if (!form.consentimiento) return;
-    // Mock: no se persiste.
+    if (talleres.some(t => t.usuario?.toLowerCase() === form.email.toLowerCase())) {
+      setError("Ya existe un taller con ese correo.");
+      return;
+    }
+    registrarTaller({
+      nombre: form.nombre,
+      nit: form.nit,
+      email: form.email,
+      usuario: form.email,
+      password: form.password,
+      telefono: form.telefono,
+      direccion: form.direccion,
+      ciudad: form.ciudad,
+      horario: form.horario,
+      eslogan: form.eslogan,
+      color: form.color,
+      logo: form.logo,
+      logoEmoji: form.logo ? undefined : "🔧",
+    });
     setOk(true);
-    setTimeout(() => navigate("/login/taller"), 2000);
+    setTimeout(() => navigate("/login/taller"), 1500);
   };
 
   return (
@@ -151,6 +173,7 @@ export const RegistroTaller = () => {
               >
                 Registrar taller
               </button>
+              {error && <p className="text-red-400 text-xs text-center">{error}</p>}
             </form>
           )}
 

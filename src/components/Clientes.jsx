@@ -4,6 +4,9 @@ import {
   Phone, MapPin, Eye, Edit3, X, Check, AlertCircle
 } from "lucide-react";
 import { usePageTitle } from '../hooks/usePageTitle';
+import { useApp } from '../context/AppContext';
+import { useAuth } from '../auth/AuthContext';
+import { validarEmail, validarTelefono, requerido, validarFormulario } from '../utils/validaciones';
 
 const AVATAR_COLORS = [
   "from-blue-600 to-blue-400",
@@ -17,44 +20,9 @@ const initialForm = { nombre: "", email: "", telefono: "", direccion: "" };
 
 export const Clientes = () => {
   usePageTitle("Clientes");
-  const [clientes, setClientes] = useState([
-    {
-      nombre: "Carlos Rodríguez",
-      iniciales: "CR",
-      estado: "Activo",
-      email: "carlos.r@email.com",
-      telefono: "+57 312 345 6789",
-      direccion: "Calle 50 #25-30, Bogotá",
-      vehiculos: 2,
-      gastado: "$1250k",
-      ultimaVisita: "19/2/2026",
-      avatarColor: "from-blue-600 to-blue-400",
-    },
-    {
-      nombre: "María Fernández",
-      iniciales: "MF",
-      estado: "Activo",
-      email: "maria.f@email.com",
-      telefono: "+57 315 987 6543",
-      direccion: "Carrera 15 #80-45, Medellín",
-      vehiculos: 1,
-      gastado: "$850k",
-      ultimaVisita: "17/2/2026",
-      avatarColor: "from-purple-600 to-purple-400",
-    },
-    {
-      nombre: "Juan Pérez",
-      iniciales: "JP",
-      estado: "Inactivo",
-      email: "juan.p@email.com",
-      telefono: "+57 301 234 5678",
-      direccion: "Avenida 68 #45-12, Cali",
-      vehiculos: 3,
-      gastado: "$2100k",
-      ultimaVisita: "14/1/2026",
-      avatarColor: "from-indigo-600 to-indigo-400",
-    },
-  ]);
+  const { clientes: todos, agregarCliente, actualizarCliente } = useApp();
+  const { tallerActivo } = useAuth();
+  const clientes = todos.filter(c => !c.tallerId || c.tallerId === tallerActivo?.id);
 
   const [busqueda, setBusqueda] = useState("");
   const [filtroEstado, setFiltroEstado] = useState("Todos los estados");
@@ -80,22 +48,13 @@ export const Clientes = () => {
   });
 
   // ── Validación ──
-  const validate = () => {
-    const e = {};
-    if (!form.nombre.trim()) e.nombre = "El nombre es obligatorio.";
-    if (!form.email.trim()) {
-      e.email = "El email es obligatorio.";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      e.email = "Ingresa un email válido.";
-    }
-    if (!form.telefono.trim()) {
-      e.telefono = "El teléfono es obligatorio.";
-    } else if (!/^[\d\s+\-()]{7,}$/.test(form.telefono)) {
-      e.telefono = "Ingresa un teléfono válido.";
-    }
-    if (!form.direccion.trim()) e.direccion = "La dirección es obligatoria.";
-    return e;
-  };
+  const validate = () =>
+    validarFormulario(form, {
+      nombre:    [requerido],
+      email:     [validarEmail],
+      telefono:  [validarTelefono],
+      direccion: [requerido],
+    });
 
   const showToast = (msg) => {
     setToast(msg);
@@ -129,13 +88,12 @@ export const Clientes = () => {
     if (Object.keys(e).length > 0) { setErrors(e); return; }
     const iniciales = form.nombre.split(" ").map(p => p[0]).slice(0, 2).join("").toUpperCase();
     if (editIndex !== null) {
-      setClientes(prev => prev.map((c, i) => i === editIndex
-        ? { ...c, nombre: form.nombre, iniciales, email: form.email, telefono: form.telefono, direccion: form.direccion }
-        : c
-      ));
+      const c = clientes[editIndex];
+      actualizarCliente(c.id, { nombre: form.nombre, iniciales, email: form.email, telefono: form.telefono, direccion: form.direccion });
       showToast("Cliente actualizado correctamente.");
     } else {
-      const nuevo = {
+      agregarCliente({
+        tallerId: tallerActivo?.id,
         nombre: form.nombre,
         iniciales,
         estado: "Activo",
@@ -146,8 +104,7 @@ export const Clientes = () => {
         gastado: "$0",
         ultimaVisita: new Date().toLocaleDateString("es-CO"),
         avatarColor: AVATAR_COLORS[clientes.length % AVATAR_COLORS.length],
-      };
-      setClientes(prev => [...prev, nuevo]);
+      });
       showToast("Cliente registrado correctamente.");
     }
     closeModal();
@@ -212,12 +169,14 @@ export const Clientes = () => {
               {/* Teléfono */}
               <div>
                 <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">
-                  Teléfono *
+                  Teléfono * (10 dígitos)
                 </label>
                 <input
                   value={form.telefono}
                   onChange={handleChange("telefono")}
-                  placeholder="Ej: +57 312 345 6789"
+                  placeholder="Ej: 3123456789"
+                  inputMode="numeric"
+                  maxLength={14}
                   className={`w-full bg-zinc-900 border ${errors.telefono ? "border-red-500/70" : "border-zinc-800"} focus:border-purple-500/60 rounded-xl py-2.5 px-4 text-white placeholder:text-zinc-600 outline-none transition-all`}
                 />
                 {errors.telefono && <p className="text-red-400 text-xs mt-1 flex items-center gap-1"><AlertCircle size={12}/>{errors.telefono}</p>}

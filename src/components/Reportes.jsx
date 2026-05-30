@@ -1,59 +1,99 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { 
   DollarSign, Wrench, Users, Calendar, 
   TrendingUp, Download, FileText, CheckCircle2, Clock
 } from "lucide-react";
 import { usePageTitle } from '../hooks/usePageTitle';
 import jsPDF from "jspdf";
+import { useApp } from '../context/AppContext';
+import { useAuth } from '../auth/AuthContext';
 
 export const Reportes = () => {
   usePageTitle("Reportes");
 
-  const ingresosMensuales = [
-    { mes: "Sep", valor: 4.2, height: "h-[60%]" },
-    { mes: "Oct", valor: 5.1, height: "h-[75%]" },
-    { mes: "Nov", valor: 4.8, height: "h-[70%]" },
-    { mes: "Dic", valor: 6.0, height: "h-[85%]" },
-    { mes: "Ene", valor: 5.5, height: "h-[80%]" },
-    { mes: "Feb", valor: 6.8, height: "h-[100%]" },
-  ];
+  const { vehiculos, clientes } = useApp();
+  const { tallerActivo } = useAuth();
+  const tallerId = tallerActivo?.id;
+  const vehiculosTaller = vehiculos.filter(v => !v.tallerId || v.tallerId === tallerId);
+  const clientesTaller = clientes.filter(c => !c.tallerId || c.tallerId === tallerId);
 
-  const distribucion = [
-    { label: "Mantenimiento", color: "bg-blue-500", hex: "#3b82f6", porcentaje: "45%" },
-    { label: "Reparación",    color: "bg-purple-500", hex: "#a855f7", porcentaje: "30%" },
-    { label: "Diagnóstico",   color: "bg-green-500",  hex: "#22c55e", porcentaje: "15%" },
-    { label: "Modificación",  color: "bg-orange-500", hex: "#f97316", porcentaje: "10%" },
-  ];
+  const ingresosMensuales = useMemo(() => {
+    const meses = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+    const m = new Date().getMonth();
+    const buckets = Array.from({ length: 6 }, (_, i) => {
+      const idx = (m - 5 + i + 12) % 12;
+      return { mes: meses[idx], idx, valor: 0 };
+    });
+    vehiculosTaller.forEach(v => {
+      if (v.estado !== "Finalizada") return;
+      const fecha = v.reporteEntrega?.fecha;
+      if (!fecha) return;
+      const d = new Date(fecha);
+      const total = (v.serviciosCotizados || []).reduce((s, x) => s + Number(x.valor || x.precio || 0), 0);
+      const b = buckets.find(x => x.idx === d.getMonth());
+      if (b) b.valor += total;
+    });
+    const max = Math.max(...buckets.map(b => b.valor), 1);
+    return buckets.map(b => ({
+      mes: b.mes,
+      valor: (b.valor / 1_000_000).toFixed(1),
+      pct: Math.max(8, Math.round((b.valor / max) * 90)),
+    }));
+  }, [vehiculosTaller]);
+
+  const distribucion = useMemo(() => {
+    const palette = [
+      { color: "bg-blue-500", hex: "#3b82f6" },
+      { color: "bg-purple-500", hex: "#a855f7" },
+      { color: "bg-green-500", hex: "#22c55e" },
+      { color: "bg-orange-500", hex: "#f97316" },
+    ];
+    const tipos = {};
+    vehiculosTaller.forEach(v => {
+      (v.serviciosCotizados || []).forEach(s => {
+        const k = s.item || s.titulo || s.nombre || s.tipo || "Otros";
+        tipos[k] = (tipos[k] || 0) + 1;
+      });
+    });
+    const total = Object.values(tipos).reduce((a, b) => a + b, 0) || 1;
+    return Object.entries(tipos).slice(0, 4).map(([label, count], i) => ({
+      label,
+      ...palette[i % palette.length],
+      porcentaje: `${Math.round((count / total) * 100)}%`,
+    }));
+  }, [vehiculosTaller]);
+
+  const finalizadosMes = vehiculosTaller.filter(v => v.estado === "Finalizada").length;
+
+  const ingresosTotales = useMemo(() => vehiculosTaller
+    .filter(v => v.estado === "Finalizada")
+    .reduce((s, v) => s + (v.serviciosCotizados || []).reduce((a, x) => a + Number(x.valor || x.precio || 0), 0), 0),
+    [vehiculosTaller]);
+
+  const diasPromedio = useMemo(() => {
+    const conFechas = vehiculosTaller.filter(v => v.estado === "Finalizada" && v.ingreso && v.reporteEntrega?.fecha);
+    if (!conFechas.length) return "—";
+    const total = conFechas.reduce((s, v) => {
+      const d = (new Date(v.reporteEntrega.fecha) - new Date(v.ingreso)) / 86400000;
+      return s + Math.max(0, d);
+    }, 0);
+    return (total / conFechas.length).toFixed(1);
+  }, [vehiculosTaller]);
+
+  const fmtMoney = (n) => n >= 1_000_000
+    ? `$${(n / 1_000_000).toFixed(1)}M`
+    : n >= 1_000
+      ? `$${(n / 1_000).toFixed(0)}K`
+      : `$${n}`;
 
   const kpis = [
-    { label: "Ingresos del Mes",     valor: "$6.8M",  detalle: "+19.3% vs mes anterior" },
-    { label: "Servicios Realizados", valor: "135",    detalle: "Este mes" },
-    { label: "Clientes Atendidos",   valor: "78",     detalle: "Este mes" },
-    { label: "Días por Servicio",    valor: "2.8",    detalle: "Tiempo promedio" },
+    { label: "Ingresos del Mes",     valor: fmtMoney(ingresosTotales), detalle: ingresosTotales ? "Servicios finalizados" : "Sin servicios finalizados" },
+    { label: "Servicios Realizados", valor: String(finalizadosMes), detalle: "Finalizados a la fecha" },
+    { label: "Clientes Atendidos",   valor: String(clientesTaller.length), detalle: "Total registrados" },
+    { label: "Días por Servicio",    valor: String(diasPromedio),    detalle: "Tiempo promedio" },
   ];
 
-  const historialDocumentos = [
-    {
-      titulo: "Reporte mensual de ingresos",
-      formato: "Formato PDF",
-      fecha: "01/04/2026",
-      categoria: "Ventas",
-      estado: "Completado",
-      estadoEstilo: "text-green-400 bg-green-500/10 border-green-500/20",
-      EstadoIcon: CheckCircle2,
-      accionActiva: true
-    },
-    {
-      titulo: "Estado de stock general",
-      formato: "Excel / CSV",
-      fecha: "28/03/2026",
-      categoria: "Inventario",
-      estado: "Generando...",
-      estadoEstilo: "text-yellow-400 bg-yellow-500/10 border-yellow-500/20",
-      EstadoIcon: Clock,
-      accionActiva: false
-    }
-  ];
+  const historialDocumentos = [];
 
   // ─── EXPORTAR PDF ────────────────────────────────────────────────────────────
   const exportarPDF = () => {
@@ -138,7 +178,7 @@ export const Reportes = () => {
     doc.line(margen, y, ancho - margen, y);
     y += 6;
 
-    const maxValor = Math.max(...ingresosMensuales.map(m => m.valor));
+    const maxValor = Math.max(...ingresosMensuales.map(m => m.valor)) || 1;
     const alturaMaxBarra = 45;
     const anchoBarra = 16;
     const separacion = (ancho - margen * 2 - ingresosMensuales.length * anchoBarra) / (ingresosMensuales.length - 1);
@@ -275,11 +315,11 @@ export const Reportes = () => {
             <span className="bg-white/20 text-white text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full backdrop-blur-md">Este mes</span>
           </div>
           <div className="relative z-10">
-            <h3 className="text-blue-100 font-medium text-sm mb-1">Ingresos del Mes</h3>
-            <p className="text-4xl font-black text-white">$6.8M</p>
+            <h3 className="text-blue-100 font-medium text-sm mb-1">{kpis[0].label}</h3>
+            <p className="text-4xl font-black text-white">{kpis[0].valor}</p>
             <div className="flex items-center gap-1 text-blue-200 mt-2 text-xs font-semibold">
               <TrendingUp size={14} />
-              <span>+19.3% vs mes anterior</span>
+              <span>{kpis[0].detalle}</span>
             </div>
           </div>
         </div>
@@ -295,9 +335,9 @@ export const Reportes = () => {
             <span className="bg-white/20 text-white text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full backdrop-blur-md">Total</span>
           </div>
           <div className="relative z-10 mt-auto">
-            <h3 className="text-purple-100 font-medium text-sm mb-1">Servicios Realizados</h3>
-            <p className="text-4xl font-black text-white">135</p>
-            <p className="text-purple-200 mt-2 text-xs font-semibold">Este mes</p>
+            <h3 className="text-purple-100 font-medium text-sm mb-1">{kpis[1].label}</h3>
+            <p className="text-4xl font-black text-white">{kpis[1].valor}</p>
+            <p className="text-purple-200 mt-2 text-xs font-semibold">{kpis[1].detalle}</p>
           </div>
         </div>
 
@@ -312,9 +352,9 @@ export const Reportes = () => {
             <span className="bg-white/20 text-white text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full backdrop-blur-md">Activos</span>
           </div>
           <div className="relative z-10">
-            <h3 className="text-emerald-100 font-medium text-sm mb-1">Clientes Atendidos</h3>
-            <p className="text-4xl font-black text-white">78</p>
-            <p className="text-emerald-200 mt-2 text-xs font-semibold">Este mes</p>
+            <h3 className="text-emerald-100 font-medium text-sm mb-1">{kpis[2].label}</h3>
+            <p className="text-4xl font-black text-white">{kpis[2].valor}</p>
+            <p className="text-emerald-200 mt-2 text-xs font-semibold">{kpis[2].detalle}</p>
           </div>
         </div>
 
@@ -329,9 +369,9 @@ export const Reportes = () => {
             <span className="bg-white/20 text-white text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full backdrop-blur-md">Promedio</span>
           </div>
           <div className="relative z-10">
-            <h3 className="text-orange-100 font-medium text-sm mb-1">Días por Servicio</h3>
-            <p className="text-4xl font-black text-white">2.8</p>
-            <p className="text-orange-200 mt-2 text-xs font-semibold">Tiempo promedio</p>
+            <h3 className="text-orange-100 font-medium text-sm mb-1">{kpis[3].label}</h3>
+            <p className="text-4xl font-black text-white">{kpis[3].valor}</p>
+            <p className="text-orange-200 mt-2 text-xs font-semibold">{kpis[3].detalle}</p>
           </div>
         </div>
       </div>
@@ -356,7 +396,10 @@ export const Reportes = () => {
             <div className="relative z-10 flex items-end justify-between w-full pl-10 h-48 sm:h-64">
               {ingresosMensuales.map((item, i) => (
                 <div key={i} className="flex flex-col items-center gap-2 sm:gap-3 w-1/6">
-                  <div className={`w-full max-w-[24px] sm:max-w-[40px] bg-gradient-to-t from-blue-700 to-blue-400 rounded-t-lg sm:rounded-t-xl hover:from-blue-600 hover:to-blue-300 transition-colors ${item.height} relative group`}>
+                  <div
+                    style={{ height: `${item.pct}%` }}
+                    className="w-full max-w-[24px] sm:max-w-[40px] bg-gradient-to-t from-blue-700 to-blue-400 rounded-t-lg sm:rounded-t-xl hover:from-blue-600 hover:to-blue-300 transition-colors relative group"
+                  >
                     <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-zinc-800 text-white text-xs font-bold py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
                       ${item.valor}M
                     </div>

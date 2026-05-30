@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Settings,
   Bell,
@@ -10,7 +10,55 @@ import {
   UserPlus,
   Monitor,
   Smartphone,
+  Check,
+  Mail,
+  Phone,
+  MapPin,
+  Building2,
 } from "lucide-react";
+import { useApp } from "../context/AppContext";
+import { useAuth } from "../auth/AuthContext";
+
+const THEME_KEY = "mototech_theme";
+const SETTINGS_KEY = "mototech_settings_v1";
+const readTheme = () => {
+  try { return localStorage.getItem(THEME_KEY) || "dark"; } catch { return "dark"; }
+};
+const applyTheme = (mode) => {
+  if (mode === "light") document.documentElement.classList.add("light-mode");
+  else document.documentElement.classList.remove("light-mode");
+};
+// Aplica el tema en arranque (antes de renderizar la primera vez)
+applyTheme(readTheme());
+
+const readSettings = () => {
+  try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}"); } catch { return {}; }
+};
+const writeSettings = (patch) => {
+  try {
+    const prev = readSettings();
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...prev, ...patch }));
+  } catch {}
+};
+
+// Hook: estado persistido en localStorage bajo SETTINGS_KEY[scope]
+function usePersistedState(scope, initial) {
+  const [value, setValue] = useState(() => {
+    const all = readSettings();
+    return { ...initial, ...(all[scope] || {}) };
+  });
+  const persist = () => writeSettings({ [scope]: value });
+  return [value, setValue, persist];
+}
+
+function useSavedToast() {
+  const [saved, setSaved] = useState(false);
+  const trigger = () => {
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1800);
+  };
+  return [saved, trigger];
+}
 
 // ─── shared input styles ───────────────────────────────────────────────────
 const inputClass =
@@ -49,52 +97,52 @@ function Section({ title, children }) {
 
 // ─── Tab: General ─────────────────────────────────────────────────────────
 function TabGeneral() {
-  const [darkMode, setDarkMode] = useState(true);
+  const { tallerActivo } = useAuth();
+  const [mode, setMode] = useState(readTheme());
+  const [saved, trigger] = useSavedToast();
+  const darkMode = mode === "dark";
+  const toggleMode = (next) => {
+    const m = next ? "dark" : "light";
+    setMode(m);
+    applyTheme(m);
+    try { localStorage.setItem(THEME_KEY, m); } catch {}
+  };
+  const guardar = () => {
+    // Tema ya se persiste en cada toggle; el botón confirma con feedback visual.
+    try { localStorage.setItem(THEME_KEY, mode); } catch {}
+    trigger();
+  };
   return (
     <div className="space-y-5">
       <Section title="Información del Taller">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="sm:col-span-2">
-            <label className={labelClass}>Nombre del Taller</label>
-            <input className={inputClass} defaultValue="MotoTech" />
-          </div>
-          <div>
-            <label className={labelClass}>Teléfono</label>
-            <input className={inputClass} defaultValue="+57 601 234 5678" />
-          </div>
-          <div>
-            <label className={labelClass}>Email</label>
-            <input className={inputClass} defaultValue="contacto@mototech.co" />
-          </div>
-          <div className="sm:col-span-2">
-            <label className={labelClass}>Dirección</label>
-            <input
-              className={inputClass}
-              defaultValue="Calle 100 #15-20, Bogotá"
-            />
-          </div>
-          <div>
-            <label className={labelClass}>Horario de Atención</label>
-            <input
-              className={inputClass}
-              defaultValue="Lun-Sáb 8:00 AM - 6:00 PM"
-            />
-          </div>
-          <div>
-            <label className={labelClass}>Zona Horaria</label>
-            <div className="relative">
-              <select className={`${inputClass} appearance-none pr-10 cursor-pointer`}>
-                <option>America/Bogota (GMT-5)</option>
-                <option>America/New_York (GMT-4)</option>
-                <option>Europe/Madrid (GMT+2)</option>
-              </select>
-              <ChevronDown
-                size={16}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
-              />
+        {tallerActivo ? (
+          <>
+            <div className="flex items-center gap-4 mb-2">
+              {tallerActivo.logoBase64 ? (
+                <img src={tallerActivo.logoBase64} alt={tallerActivo.nombre} className="w-14 h-14 rounded-2xl object-cover border border-gray-700"/>
+              ) : (
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-black text-lg">
+                  {tallerActivo.iniciales || "MT"}
+                </div>
+              )}
+              <div>
+                <p className="text-base font-bold text-white">{tallerActivo.nombre}</p>
+                <p className="text-xs text-gray-400">{tallerActivo.eslogan || "—"}</p>
+              </div>
             </div>
-          </div>
-        </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <InfoLine icon={Mail} label="Email" value={tallerActivo.email} />
+              <InfoLine icon={Phone} label="Teléfono" value={tallerActivo.telefono} />
+              <InfoLine icon={MapPin} label="Dirección" value={tallerActivo.direccion} />
+              <InfoLine icon={Building2} label="Ciudad" value={tallerActivo.ciudad} />
+            </div>
+            <div className="bg-cyan-500/5 border border-cyan-500/20 rounded-xl p-3 text-xs text-cyan-300 mt-3">
+              Para editar estos datos, ve a <strong>"Perfil del Taller"</strong> en el menú lateral.
+            </div>
+          </>
+        ) : (
+          <p className="text-sm text-gray-500">No hay un taller activo en sesión.</p>
+        )}
       </Section>
 
       <Section title="Preferencias de Interfaz">
@@ -102,35 +150,18 @@ function TabGeneral() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-white">Modo Oscuro</p>
-              <p className="text-xs text-cyan-400 mt-0.5">
+              <p className="text-xs text-gray-400 mt-0.5">
                 Activa el tema oscuro en toda la aplicación
               </p>
             </div>
-            <Toggle checked={darkMode} onChange={setDarkMode} />
-          </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-white">Idioma</p>
-              <p className="text-xs text-cyan-400 mt-0.5">
-                Selecciona el idioma de la interfaz
-              </p>
-            </div>
-            <div className="relative">
-              <select className="bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-100 appearance-none pr-8 focus:outline-none focus:border-cyan-500 cursor-pointer">
-                <option>Español</option>
-                <option>English</option>
-              </select>
-              <ChevronDown
-                size={14}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
-              />
-            </div>
+            <Toggle checked={darkMode} onChange={toggleMode} />
           </div>
         </div>
       </Section>
 
-      <div className="flex justify-end">
-        <button className="flex items-center gap-2 px-5 py-2.5 bg-gray-900 border border-gray-600 text-sm text-white rounded-xl hover:bg-gray-800 font-medium transition-colors">
+      <div className="flex justify-end items-center gap-3">
+        {saved && <span className="text-xs font-bold text-emerald-400 flex items-center gap-1"><Check size={14}/> Cambios guardados</span>}
+        <button onClick={guardar} className="flex items-center gap-2 px-5 py-2.5 bg-gray-900 border border-gray-600 text-sm text-white rounded-xl hover:bg-gray-800 font-medium transition-colors">
           <Save size={15} />
           Guardar Cambios
         </button>
@@ -138,6 +169,16 @@ function TabGeneral() {
     </div>
   );
 }
+
+const InfoLine = ({ icon: Icon, label, value }) => (
+  <div className="flex items-start gap-2 bg-gray-950/40 border border-gray-800 rounded-xl px-3 py-2">
+    <Icon size={14} className="text-cyan-400 mt-0.5 shrink-0"/>
+    <div className="min-w-0">
+      <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">{label}</p>
+      <p className="text-sm text-white font-medium truncate">{value || "—"}</p>
+    </div>
+  </div>
+);
 
 // ─── Tab: Notificaciones ──────────────────────────────────────────────────
 const notifPrefs = [
@@ -155,12 +196,18 @@ const notifChannels = [
 ];
 
 function TabNotificaciones() {
+  const all = readSettings();
   const [prefs, setPrefs] = useState(
-    Object.fromEntries(notifPrefs.map((p) => [p.key, p.default]))
+    { ...Object.fromEntries(notifPrefs.map((p) => [p.key, p.default])), ...(all.notifPrefs || {}) }
   );
   const [channels, setChannels] = useState(
-    Object.fromEntries(notifChannels.map((c) => [c.key, c.default]))
+    { ...Object.fromEntries(notifChannels.map((c) => [c.key, c.default])), ...(all.notifChannels || {}) }
   );
+  const [saved, trigger] = useSavedToast();
+  const guardar = () => {
+    writeSettings({ notifPrefs: prefs, notifChannels: channels });
+    trigger();
+  };
 
   return (
     <div className="space-y-5">
@@ -200,8 +247,9 @@ function TabNotificaciones() {
         </div>
       </Section>
 
-      <div className="flex justify-end">
-        <button className="flex items-center gap-2 px-5 py-2.5 bg-gray-900 border border-gray-600 text-sm text-white rounded-xl hover:bg-gray-800 font-medium transition-colors">
+      <div className="flex justify-end items-center gap-3">
+        {saved && <span className="text-xs font-bold text-emerald-400 flex items-center gap-1"><Check size={14}/> Preferencias guardadas</span>}
+        <button onClick={guardar} className="flex items-center gap-2 px-5 py-2.5 bg-gray-900 border border-gray-600 text-sm text-white rounded-xl hover:bg-gray-800 font-medium transition-colors">
           <Save size={15} />
           Guardar Preferencias
         </button>
@@ -299,9 +347,25 @@ const paymentMethods = [
 ];
 
 function TabFacturacion() {
+  const all = readSettings();
+  const { tallerActivo } = useAuth();
   const [methods, setMethods] = useState(
-    Object.fromEntries(paymentMethods.map((m) => [m.key, m.default]))
+    { ...Object.fromEntries(paymentMethods.map((m) => [m.key, m.default])), ...(all.billingMethods || {}) }
   );
+  const [fields, setFields] = useState({
+    razonSocial: tallerActivo?.razonSocial || tallerActivo?.nombre || "",
+    nit: tallerActivo?.nit || "",
+    regimen: "Régimen Común",
+    iva: "19",
+    prefijo: `INV-${new Date().getFullYear()}-`,
+    consecutivo: "001",
+    ...(all.billingFields || {}),
+  });
+  const [saved, trigger] = useSavedToast();
+  const guardar = () => {
+    writeSettings({ billingMethods: methods, billingFields: fields });
+    trigger();
+  };
 
   return (
     <div className="space-y-5">
@@ -309,16 +373,16 @@ function TabFacturacion() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="sm:col-span-2">
             <label className={labelClass}>Razón Social</label>
-            <input className={inputClass} defaultValue="MotoTech S.A.S" />
+            <input className={inputClass} value={fields.razonSocial} onChange={(e) => setFields(f => ({ ...f, razonSocial: e.target.value }))} />
           </div>
           <div>
             <label className={labelClass}>NIT</label>
-            <input className={inputClass} defaultValue="900.123.456-7" />
+            <input className={inputClass} value={fields.nit} onChange={(e) => setFields(f => ({ ...f, nit: e.target.value }))} />
           </div>
           <div>
             <label className={labelClass}>Régimen Tributario</label>
             <div className="relative">
-              <select className={`${inputClass} appearance-none pr-10 cursor-pointer`}>
+              <select className={`${inputClass} appearance-none pr-10 cursor-pointer`} value={fields.regimen} onChange={(e) => setFields(f => ({ ...f, regimen: e.target.value }))}>
                 <option>Régimen Común</option>
                 <option>Régimen Simplificado</option>
               </select>
@@ -330,15 +394,15 @@ function TabFacturacion() {
           </div>
           <div>
             <label className={labelClass}>IVA por Defecto (%)</label>
-            <input className={inputClass} defaultValue="19" />
+            <input className={inputClass} value={fields.iva} onChange={(e) => setFields(f => ({ ...f, iva: e.target.value }))} />
           </div>
           <div>
             <label className={labelClass}>Prefijo de Factura</label>
-            <input className={inputClass} defaultValue="INV-2025-" />
+            <input className={inputClass} value={fields.prefijo} onChange={(e) => setFields(f => ({ ...f, prefijo: e.target.value }))} />
           </div>
           <div>
             <label className={labelClass}>Número de Factura Inicial</label>
-            <input className={inputClass} defaultValue="001" />
+            <input className={inputClass} value={fields.consecutivo} onChange={(e) => setFields(f => ({ ...f, consecutivo: e.target.value }))} />
           </div>
         </div>
       </Section>
@@ -362,8 +426,9 @@ function TabFacturacion() {
         </div>
       </Section>
 
-      <div className="flex justify-end">
-        <button className="flex items-center gap-2 px-5 py-2.5 bg-gray-900 border border-gray-600 text-sm text-white rounded-xl hover:bg-gray-800 font-medium transition-colors">
+      <div className="flex justify-end items-center gap-3">
+        {saved && <span className="text-xs font-bold text-emerald-400 flex items-center gap-1"><Check size={14}/> Configuración guardada</span>}
+        <button onClick={guardar} className="flex items-center gap-2 px-5 py-2.5 bg-gray-900 border border-gray-600 text-sm text-white rounded-xl hover:bg-gray-800 font-medium transition-colors">
           <Save size={15} />
           Guardar Configuración
         </button>
@@ -373,12 +438,18 @@ function TabFacturacion() {
 }
 
 // ─── Tab: Equipo ──────────────────────────────────────────────────────────
-const teamMembers = [
-  { initials: "RG", name: "Roberto Gómez", email: "roberto.g@mototech.com", color: "from-red-500 to-orange-500" },
-  { initials: "LS", name: "Laura Sánchez", email: "laura.s@mototech.com", color: "from-purple-500 to-blue-500" },
-];
-
 function TabEquipo() {
+  const { empleados } = useApp();
+  const { tallerActivo } = useAuth();
+  const tallerId = tallerActivo?.id;
+  const team = empleados.filter(e => !tallerId || e.tallerId === tallerId);
+  const palette = [
+    "from-red-500 to-orange-500",
+    "from-purple-500 to-blue-500",
+    "from-emerald-500 to-teal-500",
+    "from-cyan-500 to-blue-600",
+    "from-pink-500 to-rose-600",
+  ];
   return (
     <div className="space-y-5">
       <Section title="Permisos del Equipo">
@@ -388,36 +459,32 @@ function TabEquipo() {
             Invitar Miembro
           </button>
         </div>
+        {team.length === 0 && (
+          <p className="text-sm text-gray-500">Aún no hay empleados registrados. Regístralos desde la sección <strong>Empleados</strong>.</p>
+        )}
         <div className="space-y-3">
-          {teamMembers.map((m) => (
-            <div
-              key={m.email}
-              className="flex items-center justify-between gap-4 bg-gray-800/40 border border-gray-700/50 rounded-xl px-4 py-3"
-            >
-              <div className="flex items-center gap-3">
-                <div
-                  className={`w-9 h-9 rounded-full bg-gradient-to-br ${m.color} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}
-                >
-                  {m.initials}
+          {team.map((m, i) => {
+            const iniciales = m.iniciales || (m.nombre || "").split(" ").map(w => w[0]).join("").toUpperCase().slice(0,2);
+            const permiso = m.permiso || m.rol || m.cargo || "Técnico";
+            return (
+              <div
+                key={m.id}
+                className="flex items-center justify-between gap-4 bg-gray-800/40 border border-gray-700/50 rounded-xl px-4 py-3"
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-9 h-9 rounded-full bg-gradient-to-br ${palette[i % palette.length]} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}
+                  >
+                    {iniciales}
+                  </div>
+                  <p className="text-sm font-medium text-white">{m.nombre}</p>
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-white">{m.name}</p>
-                  <p className="text-xs text-gray-500">{m.email}</p>
-                </div>
+                <span className="text-xs font-bold uppercase tracking-wider text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-3 py-1 rounded-full">
+                  {permiso}
+                </span>
               </div>
-              <div className="relative">
-                <select className="bg-gray-800 border border-gray-700 rounded-xl px-3 py-1.5 text-sm text-gray-300 appearance-none pr-8 focus:outline-none focus:border-cyan-500 cursor-pointer">
-                  <option>Administrador</option>
-                  <option>Técnico</option>
-                  <option>Recepcionista</option>
-                </select>
-                <ChevronDown
-                  size={14}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
-                />
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </Section>
     </div>

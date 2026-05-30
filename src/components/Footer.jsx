@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Mail, Phone, MapPin, LayoutDashboard, Bike, CalendarDays, Users, ExternalLink, Copy, Check, ChevronUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import empresa from "../config/empresa";
+import { useAuth } from "../auth/AuthContext";
 
 const navLinks = [
   { label: "Dashboard",  icon: LayoutDashboard, path: "/dashboard" },
@@ -13,6 +13,8 @@ const navLinks = [
 export const Footer = () => {
   const año = new Date().getFullYear();
   const navigate = useNavigate();
+  const { tallerActivo } = useAuth();
+  const empresa = tallerActivo || {};
   const [copiedEmail, setCopiedEmail] = useState(false);
   const [copiedPhone, setCopiedPhone] = useState(false);
 
@@ -39,17 +41,17 @@ export const Footer = () => {
           {/* ── Marca ── */}
           <div className="md:col-span-4 flex flex-col gap-5">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 bg-zinc-800 border border-zinc-700 rounded-2xl flex items-center justify-center text-xl shadow-inner">
-                {empresa.logoEmoji || "🏍️"}
+              <div className="w-11 h-11 bg-zinc-800 border border-zinc-700 rounded-2xl flex items-center justify-center text-xl shadow-inner overflow-hidden">
+                <img src="/Logo_MotoTech.jpeg" alt="MotoTech" className="w-full h-full object-cover"/>
               </div>
               <div>
-                <h2 className="text-white font-black text-lg tracking-tight leading-none">{empresa.nombre}</h2>
-                <p className="text-zinc-500 text-xs mt-0.5 font-medium">Sistema de gestión</p>
+                <h2 className="text-white font-black text-lg tracking-tight leading-none">MotoTech</h2>
+                <p className="text-zinc-500 text-xs mt-0.5 font-medium">Plataforma de gestión</p>
               </div>
             </div>
 
             <p className="text-sm text-zinc-400 leading-relaxed max-w-xs">
-              {empresa.eslogan || "Plataforma de gestión para talleres de motocicletas."}
+              Hospedamos a tu taller para que gestiones motos, clientes y servicios desde un solo lugar.
             </p>
 
             {/* Botón volver arriba */}
@@ -173,12 +175,9 @@ export const Footer = () => {
         {/* ── Barra inferior ── */}
         <div className="mt-10 pt-6 border-t border-zinc-800/60 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-xs text-zinc-600">
-            © {año} <span className="text-zinc-500 font-semibold">{empresa.nombre}</span>. Todos los derechos reservados.
+            © {año} <span className="text-zinc-500 font-semibold">MotoTech</span>. Todos los derechos reservados.
           </p>
-          <div className="flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-            <span className="text-xs text-zinc-600 font-medium">Sistema operativo</span>
-          </div>
+          <p className="text-[10px] text-zinc-700">Plataforma para talleres de motocicletas.</p>
         </div>
       </div>
     </footer>

@@ -59,3 +59,140 @@ input:-webkit-autofill:focus {
   -webkit-box-shadow: 0 0 0px 1000px #18181b inset;
   transition: background-color 5000s ease-in-out 0s;
 }
+
+/* 6. Modo Claro: overrides globales (toggle en Configuración) */
+html.light-mode body {
+  background-color: #f4f4f5 !important;
+  color: #18181b !important;
+}
+html.light-mode ::-webkit-scrollbar-track { background: #e4e4e7; }
+html.light-mode ::-webkit-scrollbar-thumb { background: #a1a1aa; }
+html.light-mode ::-webkit-scrollbar-thumb:hover { background: #71717a; }
+
+html.light-mode .bg-zinc-950,
+html.light-mode .bg-gray-950,
+html.light-mode .bg-zinc-900,
+html.light-mode .bg-gray-900,
+html.light-mode .bg-gray-900\/80,
+html.light-mode .bg-gray-900\/70,
+html.light-mode .bg-gray-900\/60,
+html.light-mode .bg-gray-800\/40,
+html.light-mode .bg-zinc-900\/50,
+html.light-mode .bg-zinc-900\/60,
+html.light-mode .bg-zinc-900\/30 {
+  background-color: #ffffff !important;
+}
+html.light-mode .bg-gray-800,
+html.light-mode .bg-zinc-800 {
+  background-color: #f4f4f5 !important;
+}
+html.light-mode .bg-gradient-to-br.from-gray-950,
+html.light-mode .bg-gradient-to-br.via-gray-900,
+html.light-mode .bg-gradient-to-br.to-gray-950 {
+  --tw-gradient-from: #ffffff !important;
+  --tw-gradient-to:   #f4f4f5 !important;
+  --tw-gradient-via:  #fafafa !important;
+}
+
+html.light-mode .text-white,
+html.light-mode .text-gray-100,
+html.light-mode .text-gray-200 {
+  color: #18181b !important;
+}
+html.light-mode .text-gray-300,
+html.light-mode .text-zinc-300,
+html.light-mode .text-gray-400,
+html.light-mode .text-zinc-400 {
+  color: #3f3f46 !important;
+}
+html.light-mode .text-gray-500,
+html.light-mode .text-zinc-500,
+html.light-mode .text-gray-600,
+html.light-mode .text-zinc-600 {
+  color: #52525b !important;
+}
+
+html.light-mode .border-gray-800,
+html.light-mode .border-zinc-800,
+html.light-mode .border-gray-700,
+html.light-mode .border-zinc-700,
+html.light-mode .border-zinc-800\/60,
+html.light-mode .border-gray-700\/50,
+html.light-mode .border-zinc-800\/50 {
+  border-color: #e4e4e7 !important;
+}
+
+html.light-mode input,
+html.light-mode select,
+html.light-mode textarea {
+  background-color: #f4f4f5 !important;
+  color: #18181b !important;
+  border-color: #d4d4d8 !important;
+}
+html.light-mode input:-webkit-autofill,
+html.light-mode input:-webkit-autofill:hover,
+html.light-mode input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #18181b;
+  -webkit-box-shadow: 0 0 0px 1000px #f4f4f5 inset;
+}
+
+/* Tipografías que en modo oscuro eran claras y en modo claro deben oscurecerse */
+html.light-mode .text-zinc-100,
+html.light-mode .text-zinc-200,
+html.light-mode .text-gray-100,
+html.light-mode .text-gray-200 {
+  color: #18181b !important;
+}
+
+/* Énfasis y acentos: oscurecer cyan/purple/orange/green/red claros */
+html.light-mode .text-cyan-100,
+html.light-mode .text-cyan-200,
+html.light-mode .text-cyan-300,
+html.light-mode .text-cyan-400 { color: #0e7490 !important; }
+html.light-mode .text-purple-200,
+html.light-mode .text-purple-300,
+html.light-mode .text-purple-400 { color: #7e22ce !important; }
+html.light-mode .text-orange-200,
+html.light-mode .text-orange-300,
+html.light-mode .text-orange-400 { color: #c2410c !important; }
+html.light-mode .text-amber-200,
+html.light-mode .text-amber-300,
+html.light-mode .text-amber-400 { color: #b45309 !important; }
+html.light-mode .text-emerald-200,
+html.light-mode .text-emerald-300,
+html.light-mode .text-emerald-400,
+html.light-mode .text-green-300,
+html.light-mode .text-green-400 { color: #047857 !important; }
+html.light-mode .text-blue-200,
+html.light-mode .text-blue-300,
+html.light-mode .text-blue-400 { color: #1d4ed8 !important; }
+html.light-mode .text-red-300,
+html.light-mode .text-red-400 { color: #b91c1c !important; }
+html.light-mode .text-pink-300,
+html.light-mode .text-pink-400 { color: #be185d !important; }
+
+/* Tarjetas con fondo translúcido coloreado: aumentar opacidad para verse en blanco */
+html.light-mode .bg-cyan-500\/5,
+html.light-mode .bg-cyan-500\/10 { background-color: #ecfeff !important; }
+html.light-mode .bg-orange-500\/5,
+html.light-mode .bg-orange-500\/10 { background-color: #fff7ed !important; }
+html.light-mode .bg-amber-500\/10 { background-color: #fffbeb !important; }
+html.light-mode .bg-purple-500\/10,
+html.light-mode .bg-purple-500\/20 { background-color: #faf5ff !important; }
+html.light-mode .bg-blue-500\/10 { background-color: #eff6ff !important; }
+html.light-mode .bg-emerald-500\/10,
+html.light-mode .bg-green-500\/10 { background-color: #ecfdf5 !important; }
+html.light-mode .bg-red-500\/10 { background-color: #fef2f2 !important; }
+html.light-mode .bg-pink-500\/10 { background-color: #fdf2f8 !important; }
+
+/* Bordes coloreados translúcidos */
+html.light-mode .border-cyan-500\/20,
+html.light-mode .border-cyan-500\/30,
+html.light-mode .border-cyan-500\/40 { border-color: #67e8f9 !important; }
+html.light-mode .border-orange-500\/20,
+html.light-mode .border-orange-500\/30 { border-color: #fdba74 !important; }
+html.light-mode .border-purple-500\/20,
+html.light-mode .border-purple-500\/30 { border-color: #d8b4fe !important; }
+html.light-mode .border-blue-500\/30 { border-color: #93c5fd !important; }
+html.light-mode .border-emerald-500\/30,
+html.light-mode .border-green-500\/30 { border-color: #6ee7b7 !important; }

@@ -2,11 +2,12 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { User, Eye, EyeOff, ArrowLeft, AlertCircle } from "lucide-react";
 import { useAuth } from "../../auth/AuthContext";
-import { clientesDemo } from "../../data/clientes";
+import { useApp } from "../../context/AppContext";
 
 export const LoginCliente = () => {
   const navigate = useNavigate();
   const { loginCliente } = useAuth();
+  const { usuariosCliente } = useApp();
   const [form, setForm] = useState({ email: "", password: "" });
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState("");
@@ -21,7 +22,7 @@ export const LoginCliente = () => {
     navigate("/cliente", { replace: true });
   };
 
-  const cuentasDemo = clientesDemo.map((c) => `${c.email} / ${c.password}`).join(" · ");
+  const cuentaDemo = usuariosCliente[0] ? `${usuariosCliente[0].email} / ${usuariosCliente[0].password}` : "";
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 flex items-center justify-center p-6">
@@ -100,7 +101,7 @@ export const LoginCliente = () => {
         </div>
 
         <p className="text-[11px] text-gray-600 text-center mt-4">
-          Cuentas demo: {cuentasDemo}
+          Cuenta demo: {cuentaDemo}
         </p>
       </div>
     </div>

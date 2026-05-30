@@ -5,7 +5,7 @@ import {
   Clock, CheckCircle, AlertCircle, FileText, Image as ImageIcon
 } from "lucide-react";
 import { useAuth } from "../../auth/AuthContext";
-import { motosDemo } from "../../data/clientes";
+import { useApp } from "../../context/AppContext";
 import { usePageTitle } from "../../hooks/usePageTitle";
 
 const estadoStyle = {
@@ -26,16 +26,17 @@ const fmtCurrency = (n) =>
 export const ClienteDetalleMoto = () => {
   const { id } = useParams();
   const { user } = useAuth();
-  const moto = motosDemo.find((m) => m.id === id && m.clienteId === user?.id);
+  const { vehiculos } = useApp();
+  const moto = vehiculos.find((m) => m.id === id && m.clienteUsuarioId === user?.id);
 
   usePageTitle(moto ? `${moto.marca} ${moto.modelo}` : "Moto");
 
   if (!moto) return <Navigate to="/cliente" replace />;
 
   // Solo eventos visibles para el cliente (RF-10)
-  const eventos = moto.historial.filter((h) => h.visibleCliente);
-
-  const total = moto.serviciosCotizados.reduce((s, x) => s + x.valor, 0);
+  const eventos = (moto.historial || []).filter((h) => h.visibleCliente);
+  const serviciosCotizados = moto.serviciosCotizados || [];
+  const total = serviciosCotizados.reduce((s, x) => s + (Number(x.valor) || Number(x.precio) || 0), 0);
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -132,17 +133,17 @@ export const ClienteDetalleMoto = () => {
 
       {/* COTIZACIÓN */}
       <Card title="Servicios y cotización" icon={<FileText size={18} className="text-purple-400" />}>
-        {moto.serviciosCotizados.length === 0 ? (
+        {serviciosCotizados.length === 0 ? (
           <p className="text-sm text-gray-500">
             La cotización detallada aún no está disponible. El taller la compartirá tras el diagnóstico.
           </p>
         ) : (
           <div>
             <ul className="divide-y divide-gray-800">
-              {moto.serviciosCotizados.map((s, i) => (
+              {serviciosCotizados.map((s, i) => (
                 <li key={i} className="flex items-center justify-between py-2.5 text-sm">
-                  <span className="text-gray-300">{s.item}</span>
-                  <span className="text-white font-medium">{fmtCurrency(s.valor)}</span>
+                  <span className="text-gray-300">{s.item || s.titulo || s.nombre}</span>
+                  <span className="text-white font-medium">{fmtCurrency(Number(s.valor) || Number(s.precio) || 0)}</span>
                 </li>
               ))}
             </ul>
@@ -153,6 +154,33 @@ export const ClienteDetalleMoto = () => {
           </div>
         )}
       </Card>
+
+      {/* REPORTE DE ENTREGA */}
+      {moto.reporteEntrega && (
+        <Card title="Reporte de entrega" icon={<CheckCircle size={18} className="text-green-400" />}>
+          <p className="text-gray-300 text-sm mb-4">{moto.reporteEntrega.descripcion}</p>
+          {moto.reporteEntrega.recomendaciones && (
+            <div className="bg-gray-950/60 border border-gray-800 rounded-xl p-3 mb-4">
+              <p className="text-[11px] uppercase text-gray-500 font-bold mb-1">Recomendaciones</p>
+              <p className="text-sm text-gray-300">{moto.reporteEntrega.recomendaciones}</p>
+            </div>
+          )}
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-gray-400 text-sm">Valor del servicio</span>
+            <span className="text-2xl font-black text-green-400">{fmtCurrency(moto.reporteEntrega.valorTotal || 0)}</span>
+          </div>
+          {(moto.reporteEntrega.fotos || []).length > 0 && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              {moto.reporteEntrega.fotos.map((f, i) => (
+                <img key={i} src={f} alt={`reporte-${i}`} className="w-full h-28 object-cover rounded-lg border border-gray-800"/>
+              ))}
+            </div>
+          )}
+          {moto.reporteEntrega.tecnico && (
+            <p className="text-xs text-gray-500 mt-3">Atendido por {moto.reporteEntrega.tecnico}</p>
+          )}
+        </Card>
+      )}
     </div>
   );
 };

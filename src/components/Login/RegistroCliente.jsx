@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { User, ArrowLeft, Check } from "lucide-react";
+import { useApp } from "../../context/AppContext";
 
 const initial = {
   nombre: "",
@@ -9,23 +10,39 @@ const initial = {
   password: "",
   telefono: "",
   direccion: "",
+  tallerId: "",
   consentimiento: false,
 };
 
 export const RegistroCliente = () => {
   const navigate = useNavigate();
-  const [form, setForm] = useState(initial);
+  const { registrarCliente, usuariosCliente, talleres } = useApp();
+  const [form, setForm] = useState({ ...initial, tallerId: talleres[0]?.id || "" });
   const [ok, setOk] = useState(false);
+  const [error, setError] = useState("");
 
   const set = (k) => (e) =>
     setForm((f) => ({ ...f, [k]: e.target.type === "checkbox" ? e.target.checked : e.target.value }));
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    setError("");
     if (!form.consentimiento) return;
-    // Mock: no se persiste; se confirma y se redirige al login.
+    if (usuariosCliente.some(u => u.email?.toLowerCase() === form.email.toLowerCase())) {
+      setError("Ya existe una cuenta con ese correo.");
+      return;
+    }
+    registrarCliente({
+      tallerId: form.tallerId || talleres[0]?.id,
+      nombre: form.nombre,
+      documento: form.documento,
+      email: form.email,
+      password: form.password,
+      telefono: form.telefono,
+      direccion: form.direccion,
+    });
     setOk(true);
-    setTimeout(() => navigate("/login/cliente"), 1800);
+    setTimeout(() => navigate("/login/cliente"), 1500);
   };
 
   return (
@@ -68,6 +85,19 @@ export const RegistroCliente = () => {
               <Field label="Contraseña" value={form.password} onChange={set("password")} required type="password" minLength={6} />
               <Field label="Dirección" value={form.direccion} onChange={set("direccion")} />
 
+              {talleres.length > 1 && (
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1.5">Taller asociado</label>
+                  <select
+                    value={form.tallerId}
+                    onChange={set("tallerId")}
+                    className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none"
+                  >
+                    {talleres.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
+                  </select>
+                </div>
+              )}
+
               <label className="flex items-start gap-2 text-xs text-gray-400 pt-2">
                 <input
                   type="checkbox"
@@ -88,6 +118,7 @@ export const RegistroCliente = () => {
               >
                 Crear cuenta
               </button>
+              {error && <p className="text-red-400 text-xs text-center">{error}</p>}
             </form>
           )}
 

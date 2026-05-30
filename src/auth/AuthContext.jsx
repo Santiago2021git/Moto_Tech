@@ -1,69 +1,141 @@
 import React, { createContext, useContext, useState, useMemo, useCallback, useEffect } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { talleres, getTheme } from "../data/talleres";
-import { clientesDemo } from "../data/clientes";
+import { useApp } from "../context/AppContext";
 import { setEmpresa } from "../config/empresa";
 
+// Paleta de colores tailwind por taller (clases completas para que Tailwind las detecte)
+const themeByColor = {
+  cyan: {
+    primaryText: "text-cyan-400",
+    primaryBg: "bg-cyan-500",
+    primaryBgSoft: "bg-cyan-500/20",
+    primaryBgHover: "hover:bg-cyan-500/10",
+    primaryHoverText: "hover:text-cyan-400",
+    primaryBorder: "border-cyan-500/20",
+    gradient: "from-cyan-500 to-blue-600",
+    ring: "focus:ring-cyan-500",
+  },
+  orange: {
+    primaryText: "text-orange-400",
+    primaryBg: "bg-orange-500",
+    primaryBgSoft: "bg-orange-500/20",
+    primaryBgHover: "hover:bg-orange-500/10",
+    primaryHoverText: "hover:text-orange-400",
+    primaryBorder: "border-orange-500/20",
+    gradient: "from-orange-500 to-red-600",
+    ring: "focus:ring-orange-500",
+  },
+  purple: {
+    primaryText: "text-purple-400",
+    primaryBg: "bg-purple-500",
+    primaryBgSoft: "bg-purple-500/20",
+    primaryBgHover: "hover:bg-purple-500/10",
+    primaryHoverText: "hover:text-purple-400",
+    primaryBorder: "border-purple-500/20",
+    gradient: "from-purple-500 to-pink-600",
+    ring: "focus:ring-purple-500",
+  },
+};
+
+export const getTheme = (color) => themeByColor[color] || themeByColor.cyan;
+
 const AuthContext = createContext(null);
+const SESSION_KEY = "mototech_session";
 
 export function AuthProvider({ children }) {
-  // session: { role: 'taller' | 'cliente', user: {...}, tallerActivo: {...} }
-  const [session, setSession] = useState(null);
+  const { talleres, usuariosCliente } = useApp();
+
+  // Restaura sesión persistida (si existe)
+  const [session, setSession] = useState(() => {
+    try {
+      const raw = localStorage.getItem(SESSION_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  // Re-resuelve los datos del usuario/taller en vivo desde el AppContext (por si fueron editados)
+  const resolved = useMemo(() => {
+    if (!session) return null;
+    if (session.role === "super") {
+      const s = talleres.find(x => x.id === session.userId && x.isSuper);
+      if (!s) return null;
+      return { role: "super", user: s, tallerActivo: null, isSuper: true };
+    }
+    if (session.role === "taller") {
+      const t = talleres.find(x => x.id === session.userId && !x.isSuper);
+      if (!t) return null;
+      return { role: "taller", user: t, tallerActivo: t };
+    }
+    if (session.role === "cliente") {
+      const c = usuariosCliente.find(x => x.id === session.userId);
+      if (!c) return null;
+      const t = talleres.find(x => x.id === c.tallerId && !x.isSuper) || talleres.find(x => !x.isSuper);
+      return { role: "cliente", user: c, tallerActivo: t };
+    }
+    return null;
+  }, [session, talleres, usuariosCliente]);
+
+  useEffect(() => {
+    if (resolved?.tallerActivo) setEmpresa(resolved.tallerActivo);
+  }, [resolved]);
+
+  const persistSession = (s) => {
+    if (s) localStorage.setItem(SESSION_KEY, JSON.stringify(s));
+    else localStorage.removeItem(SESSION_KEY);
+  };
 
   const loginTaller = useCallback((email, password) => {
-    const taller = talleres.find(
-      (t) => t.usuario.toLowerCase() === email.toLowerCase() && t.password === password
+    const t = talleres.find(
+      x => (x.usuario?.toLowerCase() === email.toLowerCase() || x.email?.toLowerCase() === email.toLowerCase()) && x.password === password
     );
-    if (!taller) return { ok: false, error: "Credenciales inválidas" };
-    setSession({ role: "taller", user: taller, tallerActivo: taller });
-    return { ok: true };
-  }, []);
+    if (!t) return { ok: false, error: "Credenciales inválidas" };
+    // Detección automática del super-usuario MotoTech
+    const role = t.isSuper ? "super" : "taller";
+    const s = { role, userId: t.id };
+    setSession(s);
+    persistSession(s);
+    return { ok: true, role };
+  }, [talleres]);
 
   const loginCliente = useCallback((email, password) => {
-    const cliente = clientesDemo.find(
-      (c) => c.email.toLowerCase() === email.toLowerCase() && c.password === password
+    const c = usuariosCliente.find(
+      x => x.email?.toLowerCase() === email.toLowerCase() && x.password === password
     );
-    if (!cliente) return { ok: false, error: "Credenciales inválidas" };
-    const taller = talleres.find((t) => t.id === cliente.tallerId) || talleres[0];
-    setSession({ role: "cliente", user: cliente, tallerActivo: taller });
+    if (!c) return { ok: false, error: "Credenciales inválidas" };
+    const s = { role: "cliente", userId: c.id };
+    setSession(s);
+    persistSession(s);
     return { ok: true };
+  }, [usuariosCliente]);
+
+  const logout = useCallback(() => {
+    setSession(null);
+    persistSession(null);
   }, []);
 
-  const logout = useCallback(() => setSession(null), []);
-
-  // Mantiene `empresa` (export por defecto) sincronizado con el taller activo,
-  // para que componentes que importan `empresa` directamente vean los datos del taller.
-  useEffect(() => {
-    if (session?.tallerActivo) setEmpresa(session.tallerActivo);
-  }, [session]);
-
-  /**
-   * Permite cambiar el taller activo en demo (para mostrar marca blanca al profesor).
-   * Solo aplica si está logueado como taller.
-   */
   const cambiarTallerActivo = useCallback((tallerId) => {
-    const t = talleres.find((x) => x.id === tallerId);
-    if (!t) return;
-    setSession((prev) =>
-      prev ? { ...prev, user: prev.role === "taller" ? t : prev.user, tallerActivo: t } : prev
-    );
-  }, []);
+    const t = talleres.find(x => x.id === tallerId);
+    if (!t || !session || session.role !== "taller") return;
+    const s = { role: "taller", userId: t.id };
+    setSession(s);
+    persistSession(s);
+  }, [talleres, session]);
 
-  const value = useMemo(
-    () => ({
-      session,
-      isAuthenticated: !!session,
-      role: session?.role || null,
-      user: session?.user || null,
-      tallerActivo: session?.tallerActivo || null,
-      theme: getTheme(session?.tallerActivo?.color),
-      loginTaller,
-      loginCliente,
-      logout,
-      cambiarTallerActivo,
-    }),
-    [session, loginTaller, loginCliente, logout, cambiarTallerActivo]
-  );
+  const value = useMemo(() => ({
+    session: resolved,
+    isAuthenticated: !!resolved,
+    role: resolved?.role || null,
+    user: resolved?.user || null,
+    tallerActivo: resolved?.tallerActivo || null,
+    isSuper: resolved?.role === "super",
+    theme: getTheme(resolved?.tallerActivo?.color || resolved?.user?.color),
+    loginTaller,
+    loginCliente,
+    logout,
+    cambiarTallerActivo,
+  }), [resolved, loginTaller, loginCliente, logout, cambiarTallerActivo]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
@@ -74,19 +146,16 @@ export function useAuth() {
   return ctx;
 }
 
-/**
- * Guard: solo permite paso si está autenticado y opcionalmente con un rol específico.
- */
 export function RequireAuth({ role, children }) {
   const { isAuthenticated, role: currentRole } = useAuth();
   const location = useLocation();
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-  if (role && currentRole !== role) {
-    // Redirige al espacio que sí le corresponde
-    return <Navigate to={currentRole === "cliente" ? "/cliente" : "/"} replace />;
+  if (!isAuthenticated) return <Navigate to="/login" state={{ from: location }} replace />;
+  if (role) {
+    const allowed = Array.isArray(role) ? role.includes(currentRole) : role === currentRole;
+    if (!allowed) {
+      const fallback = currentRole === "cliente" ? "/cliente" : currentRole === "super" ? "/super" : "/";
+      return <Navigate to={fallback} replace />;
+    }
   }
   return children;
 }

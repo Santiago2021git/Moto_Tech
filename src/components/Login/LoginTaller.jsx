@@ -2,11 +2,12 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Wrench, Eye, EyeOff, ArrowLeft, AlertCircle } from "lucide-react";
 import { useAuth } from "../../auth/AuthContext";
-import { talleres } from "../../data/talleres";
+import { useApp } from "../../context/AppContext";
 
 export const LoginTaller = () => {
   const navigate = useNavigate();
   const { loginTaller } = useAuth();
+  const { talleres } = useApp();
   const [form, setForm] = useState({ email: "", password: "" });
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState("");
@@ -18,10 +19,13 @@ export const LoginTaller = () => {
       setError(res.error);
       return;
     }
-    navigate("/", { replace: true });
+    navigate(res.role === "super" ? "/super" : "/", { replace: true });
   };
 
-  const cuentasDemo = talleres.map((t) => `${t.usuario} / ${t.password}`).join(" · ");
+  const tallerDemo = talleres.find(t => !t.isSuper);
+  const superDemo = talleres.find(t => t.isSuper);
+  const cuentaDemo = tallerDemo ? `${tallerDemo.email} / ${tallerDemo.password}` : "";
+  const cuentaSuper = superDemo ? `${superDemo.email} / ${superDemo.password}` : "";
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 flex items-center justify-center p-6">
@@ -100,7 +104,10 @@ export const LoginTaller = () => {
         </div>
 
         <p className="text-[11px] text-gray-600 text-center mt-4">
-          Cuentas demo: {cuentasDemo}
+          Cuenta taller demo: {cuentaDemo}
+        </p>
+        <p className="text-[11px] text-purple-500/80 text-center mt-1">
+          Super-usuario MotoTech: {cuentaSuper}
         </p>
       </div>
     </div>

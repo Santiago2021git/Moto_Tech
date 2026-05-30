@@ -5,10 +5,14 @@ import {
 } from 'lucide-react';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { DetalleVehiculo } from './DetalleVehiculo';
+import { useApp } from '../context/AppContext';
+import { useAuth } from '../auth/AuthContext';
+import { validarPlaca, validarAnio, validarTelefono, requerido, validarFormulario } from '../utils/validaciones';
 
 const ESTADOS_V = ["Sin Atender", "En Proceso", "Finalizada"];
-const MARCAS = ["Honda", "Yamaha", "Kawasaki", "Suzuki", "Ducati", "BMW", "KTM", "Royal Enfield", "Harley-Davidson", "Otra"];
-const initialFormV = { placa: "", marca: "Honda", modelo: "", año: new Date().getFullYear().toString(), cliente: "", telefono: "", estado: "Sin Atender" };
+const MARCAS = ["Honda", "Yamaha", "Kawasaki", "Suzuki", "Ducati", "BMW", "KTM", "Royal Enfield", "Harley-Davidson", "Bajaj", "AKT", "TVS", "Otra"];
+const COLORES_MOTO = ["Rojo", "Azul", "Negro", "Blanco", "Gris", "Verde", "Amarillo", "Naranja", "Plateado", "Otro"];
+const initialFormV = { placa: "", marca: "Honda", modelo: "", año: new Date().getFullYear().toString(), color: "Rojo", cliente: "", telefono: "", estado: "Sin Atender" };
 
 const statusStyle = (estado) => {
   if (estado === 'En Proceso') return 'bg-blue-500/10 text-blue-400 border border-blue-500/20';
@@ -25,15 +29,13 @@ const FILTER_TABS = [
 
 export const Vehiculos = () => {
   usePageTitle("Vehículos");
+  const { vehiculos: todos, agregarVehiculo, actualizarVehiculo, eliminarVehiculo } = useApp();
+  const { tallerActivo } = useAuth();
+  const vehiculos = todos.filter(v => !v.tallerId || v.tallerId === tallerActivo?.id);
+
   const [vehiculoSeleccionado, setVehiculoSeleccionado] = useState(null);
   const [filter, setFilter] = useState('Todos');
   const [busqueda, setBusqueda] = useState('');
-
-  const [vehiculos, setVehiculos] = useState([
-    { id: 1, placa: 'ABC123', marca: 'Honda', modelo: 'CBR 600RR', cliente: 'Carlos Martínez', telefono: '+57 310 456 7890', año: '2022', estado: 'En Proceso', ingreso: 'hace 10 días', servicios: 1 },
-    { id: 2, placa: 'XYZ789', marca: 'Yamaha', modelo: 'MT-07', cliente: 'Laura Gómez', telefono: '+57 320 789 4561', año: '2021', estado: 'Sin Atender', ingreso: 'hace 8 días', servicios: 1 },
-    { id: 3, placa: 'DEF456', marca: 'Kawasaki', modelo: 'Z900', cliente: 'Andrés Herrera', telefono: '+57 315 234 5678', año: '2023', estado: 'Finalizada', ingreso: 'hace 3 días', servicios: 2 },
-  ]);
 
   const [showModal, setShowModal] = useState(false);
   const [editIndex, setEditIndex] = useState(null);
@@ -51,18 +53,20 @@ export const Vehiculos = () => {
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
-  const validate = () => {
-    const e = {};
-    if (!form.placa.trim()) e.placa = 'La placa es obligatoria.';
-    if (!form.modelo.trim()) e.modelo = 'El modelo es obligatorio.';
-    if (!form.cliente.trim()) e.cliente = 'El propietario es obligatorio.';
-    return e;
-  };
+  const validate = () =>
+    validarFormulario(form, {
+      placa:    [validarPlaca],
+      modelo:   [requerido],
+      año:     [validarAnio],
+      cliente:  [requerido],
+      color:    [requerido],
+      telefono: [validarTelefono],
+    });
 
   const openModal = (index = null) => {
     if (index !== null) {
       const v = vehiculos[index];
-      setForm({ placa: v.placa, marca: v.marca, modelo: v.modelo, año: v.año, cliente: v.cliente, telefono: v.telefono || '', estado: v.estado });
+      setForm({ placa: v.placa, marca: v.marca, modelo: v.modelo, año: v.año, color: v.color || 'Rojo', cliente: v.cliente, telefono: v.telefono || '', estado: v.estado });
       setEditIndex(index);
     } else {
       setForm(initialFormV);
@@ -78,23 +82,23 @@ export const Vehiculos = () => {
     const e = validate();
     if (Object.keys(e).length > 0) { setErrors(e); return; }
     if (editIndex !== null) {
-      setVehiculos(prev => prev.map((v, i) => i === editIndex
-        ? { ...v, placa: form.placa.toUpperCase(), marca: form.marca, modelo: form.modelo, año: form.año, cliente: form.cliente, telefono: form.telefono, estado: form.estado }
-        : v));
+      const v = vehiculos[editIndex];
+      actualizarVehiculo(v.id, { placa: form.placa.toUpperCase(), marca: form.marca, modelo: form.modelo, año: form.año, color: form.color, cliente: form.cliente, telefono: form.telefono, estado: form.estado });
       showToast('Vehículo actualizado correctamente.');
     } else {
-      setVehiculos(prev => [...prev, {
-        id: Date.now(), placa: form.placa.toUpperCase(), marca: form.marca, modelo: form.modelo,
-        año: form.año, cliente: form.cliente, telefono: form.telefono, estado: form.estado,
-        ingreso: 'recién ingresado', servicios: 0
-      }]);
+      agregarVehiculo({
+        tallerId: tallerActivo?.id,
+        placa: form.placa.toUpperCase(), marca: form.marca, modelo: form.modelo,
+        año: form.año, color: form.color, cliente: form.cliente, telefono: form.telefono, estado: form.estado,
+      });
       showToast('Vehículo registrado correctamente.');
     }
     closeModal();
   };
 
   const handleDelete = (index) => {
-    setVehiculos(prev => prev.filter((_, i) => i !== index));
+    const v = vehiculos[index];
+    if (v) eliminarVehiculo(v.id);
     setConfirmDeleteIndex(null);
     showToast('Vehículo eliminado.');
   };
@@ -105,7 +109,7 @@ export const Vehiculos = () => {
   };
 
   if (vehiculoSeleccionado) {
-    return <DetalleVehiculo vehiculo={vehiculoSeleccionado} onBack={() => setVehiculoSeleccionado(null)} onUpdate={(updated) => { setVehiculos(prev => prev.map(v => v.id === updated.id ? updated : v)); setVehiculoSeleccionado(updated); }} />;
+    return <DetalleVehiculo vehiculo={vehiculoSeleccionado} onBack={() => setVehiculoSeleccionado(null)} onUpdate={(updated) => { actualizarVehiculo(updated.id, updated); setVehiculoSeleccionado(updated); }} />;
   }
 
   return (
@@ -134,9 +138,10 @@ export const Vehiculos = () => {
                   {errors.placa && <p className="text-red-400 text-xs mt-1 flex items-center gap-1"><AlertCircle size={12} />{errors.placa}</p>}
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">Año</label>
-                  <input value={form.año} onChange={handleChange('año')} placeholder="2024"
-                    className="w-full bg-zinc-900 border border-zinc-800 focus:border-blue-500/60 rounded-xl py-2.5 px-4 text-white placeholder:text-zinc-600 outline-none transition-all" />
+                  <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">Año *</label>
+                  <input value={form.año} onChange={handleChange('año')} placeholder="2024" inputMode="numeric" maxLength={4}
+                    className={`w-full bg-zinc-900 border ${errors.año ? 'border-red-500/70' : 'border-zinc-800'} focus:border-blue-500/60 rounded-xl py-2.5 px-4 text-white placeholder:text-zinc-600 outline-none transition-all`} />
+                  {errors.año && <p className="text-red-400 text-xs mt-1 flex items-center gap-1"><AlertCircle size={12} />{errors.año}</p>}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -158,15 +163,27 @@ export const Vehiculos = () => {
                 </div>
               </div>
               <div>
+                <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">Color *</label>
+                <div className="relative">
+                  <select value={form.color} onChange={handleChange('color')}
+                    className="appearance-none w-full bg-zinc-900 border border-zinc-800 rounded-xl py-2.5 pl-4 pr-10 text-white outline-none cursor-pointer">
+                    {COLORES_MOTO.map(c => <option key={c}>{c}</option>)}
+                  </select>
+                  <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" />
+                </div>
+                {errors.color && <p className="text-red-400 text-xs mt-1 flex items-center gap-1"><AlertCircle size={12} />{errors.color}</p>}
+              </div>
+              <div>
                 <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">Propietario *</label>
                 <input value={form.cliente} onChange={handleChange('cliente')} placeholder="Nombre completo"
                   className={`w-full bg-zinc-900 border ${errors.cliente ? 'border-red-500/70' : 'border-zinc-800'} focus:border-blue-500/60 rounded-xl py-2.5 px-4 text-white placeholder:text-zinc-600 outline-none transition-all`} />
                 {errors.cliente && <p className="text-red-400 text-xs mt-1 flex items-center gap-1"><AlertCircle size={12} />{errors.cliente}</p>}
               </div>
               <div>
-                <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">Teléfono</label>
-                <input value={form.telefono} onChange={handleChange('telefono')} placeholder="+57 300 000 0000"
-                  className="w-full bg-zinc-900 border border-zinc-800 focus:border-blue-500/60 rounded-xl py-2.5 px-4 text-white placeholder:text-zinc-600 outline-none transition-all" />
+                <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">Teléfono * (10 dígitos)</label>
+                <input value={form.telefono} onChange={handleChange('telefono')} placeholder="Ej: 3001234567" inputMode="numeric" maxLength={14}
+                  className={`w-full bg-zinc-900 border ${errors.telefono ? 'border-red-500/70' : 'border-zinc-800'} focus:border-blue-500/60 rounded-xl py-2.5 px-4 text-white placeholder:text-zinc-600 outline-none transition-all`} />
+                {errors.telefono && <p className="text-red-400 text-xs mt-1 flex items-center gap-1"><AlertCircle size={12} />{errors.telefono}</p>}
               </div>
               <div>
                 <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">Estado</label>

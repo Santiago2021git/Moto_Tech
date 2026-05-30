@@ -4,6 +4,8 @@ import {
   Tag, Activity, List, Edit2, Trash2, X, Check, AlertCircle
 } from "lucide-react";
 import { usePageTitle } from '../hooks/usePageTitle';
+import { useApp } from '../context/AppContext';
+import { useAuth } from '../auth/AuthContext';
 
 const CATS_SERVICIO = ["Mantenimiento", "Frenos", "Motor", "Transmisión", "Eléctrico", "Suspensión", "Carrocería", "Otros"];
 const COLORES_S = ["from-blue-600 to-indigo-600","from-purple-600 to-pink-600","from-emerald-500 to-teal-600","from-orange-500 to-red-600","from-cyan-500 to-blue-600"];
@@ -11,12 +13,9 @@ const initialFormS = { titulo: "", categoria: "Mantenimiento", descripcion: "", 
 
 export const Servicios = () => {
   usePageTitle("Servicios");
-  const [servicios, setServicios] = useState([
-    { titulo: "Cambio de Aceite Completo", categoria: "Mantenimiento", descripcion: "Cambio de aceite de motor y filtro, incluye revisión de niveles.", duracion: "45 min", precio: "$50.000", incluye: ["Aceite 10W40", "Filtro de aceite"], popularidad: 95, color: "from-blue-600 to-indigo-600" },
-    { titulo: "Mantenimiento General", categoria: "Mantenimiento", descripcion: "Revisión completa de sistemas, ajustes y lubricación.", duracion: "120 min", precio: "$120.000", incluye: ["Aceite", "Filtros", "Lubricantes"], popularidad: 88, color: "from-purple-600 to-pink-600" },
-    { titulo: "Ajuste de Frenos", categoria: "Frenos", descripcion: "Revisión y ajuste del sistema de frenos, incluye pastillas.", duracion: "60 min", precio: "$80.000", incluye: ["Pastillas de freno"], popularidad: 75, color: "from-emerald-500 to-teal-600" },
-    { titulo: "Sincronización de Motor", categoria: "Motor", descripcion: "Limpieza de inyectores, cambio de bujías y escáner.", duracion: "90 min", precio: "$150.000", incluye: ["Bujias", "Limpiador"], popularidad: 60, color: "from-orange-500 to-red-600" },
-  ]);
+  const { servicios: catalogo, agregarServicio, actualizarServicio, eliminarServicio } = useApp();
+  const { tallerActivo } = useAuth();
+  const servicios = catalogo.filter(s => !s.tallerId || s.tallerId === tallerActivo?.id);
 
   const [busqueda, setBusqueda] = useState("");
   const [filtroCategoria, setFiltroCategoria] = useState("Todas las categorías");
@@ -48,7 +47,7 @@ export const Servicios = () => {
   const openModal = (index = null) => {
     if (index !== null) {
       const s = servicios[index];
-      setForm({ titulo: s.titulo, categoria: s.categoria, descripcion: s.descripcion, duracion: s.duracion, precio: s.precio, incluye: s.incluye.join(", ") });
+      setForm({ titulo: s.titulo, categoria: s.categoria, descripcion: s.descripcion, duracion: s.duracion, precio: s.precio, incluye: (s.incluye || []).join(", ") });
       setEditIndex(index);
     } else {
       setForm(initialFormS);
@@ -65,17 +64,24 @@ export const Servicios = () => {
     if (Object.keys(e).length > 0) { setErrors(e); return; }
     const incluyeArr = form.incluye.split(",").map(i => i.trim()).filter(Boolean);
     if (editIndex !== null) {
-      setServicios(prev => prev.map((s, i) => i === editIndex ? { ...s, titulo: form.titulo, categoria: form.categoria, descripcion: form.descripcion, duracion: form.duracion, precio: form.precio, incluye: incluyeArr } : s));
+      const s = servicios[editIndex];
+      actualizarServicio(s.id, { titulo: form.titulo, categoria: form.categoria, descripcion: form.descripcion, duracion: form.duracion, precio: form.precio, incluye: incluyeArr });
       showToast("Servicio actualizado correctamente.");
     } else {
-      setServicios(prev => [...prev, { titulo: form.titulo, categoria: form.categoria, descripcion: form.descripcion, duracion: form.duracion, precio: form.precio, incluye: incluyeArr, popularidad: 0, color: COLORES_S[prev.length % COLORES_S.length] }]);
+      agregarServicio({
+        tallerId: tallerActivo?.id,
+        titulo: form.titulo, categoria: form.categoria, descripcion: form.descripcion,
+        duracion: form.duracion, precio: form.precio, incluye: incluyeArr,
+        popularidad: 0, color: COLORES_S[servicios.length % COLORES_S.length],
+      });
       showToast("Servicio creado correctamente.");
     }
     closeModal();
   };
 
   const handleDelete = (index) => {
-    setServicios(prev => prev.filter((_, i) => i !== index));
+    const s = servicios[index];
+    if (s) eliminarServicio(s.id);
     setConfirmDeleteIndex(null);
     showToast("Servicio eliminado.");
   };
